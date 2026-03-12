@@ -1,1 +1,1 @@
-	numpy实现pytorch的mlp
+	numpy实现pytorch的mlp：mlp_mnist.py
