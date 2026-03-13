@@ -106,6 +106,9 @@ class Sequential:
 
 
 class BaseLoss(ABC):
+    def __init__(self):
+        self.cache = {}
+
     @abstractmethod
     def forward(self, prediction, label):
         """
@@ -114,7 +117,7 @@ class BaseLoss(ABC):
         pass
 
     @abstractmethod
-    def backward(self, prediction, label):
+    def backward(self):
         """
         反向传播,计算损失值对预测值的梯度
         """
