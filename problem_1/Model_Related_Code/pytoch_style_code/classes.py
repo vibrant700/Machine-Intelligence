@@ -121,6 +121,8 @@ class Batchnorm(Base_Classes.BaseLayer):
 
 
 # loss_functions
+
+
 class CrossEntropyLoss(Base_Classes.BaseLoss):
     def forward(self, prediction: np.ndarray, label: np.ndarray):
         # 将预测值转化为概率
@@ -146,3 +148,13 @@ class CrossEntropyLoss(Base_Classes.BaseLoss):
         grad_of_out[np.arange(batch_size), label] -= 1
         grad_of_out = grad_of_out / batch_size
         return grad_of_out
+
+
+# optimizers
+
+
+# 随机梯度下降优化器
+class SGD(Base_Classes.BaseOptimizer):
+    def step(self):
+        for item in self.params:
+            item.value -= item.grad * self.lr
