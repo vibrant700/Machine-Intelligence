@@ -77,3 +77,19 @@ class Dropout(Base_Classes.BaseLayer):
             return mask * scale * grad_of_output
         else:
             return grad_of_output
+
+
+# ReLU类
+class ReLU(Base_Classes.BaseLayer):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, inputs):
+        mask = (inputs > 0).astype(np.float32)
+        self.cache["mask"] = mask
+        return np.maximum(0, inputs)
+
+    def backward(self, grad_of_output):
+        mask = self.cache["mask"]
+        grad_of_input = grad_of_output * mask
+        return grad_of_input
