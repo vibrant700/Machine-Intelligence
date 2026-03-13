@@ -93,3 +93,20 @@ class ReLU(Base_Classes.BaseLayer):
         mask = self.cache["mask"]
         grad_of_input = grad_of_output * mask
         return grad_of_input
+
+
+# Sigmoid类
+# 尚未考虑极端数值下的数值稳定性，留待后期完善
+class Sigmoid(Base_Classes.BaseLayer):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, inputs):
+        output = 1 / (1 + np.exp(-inputs))
+        self.cache["inputs"] = inputs
+        self.cache["output"] = output
+        return output
+
+    def backward(self, grad_of_output):
+        output = self.cache["output"]
+        return output * (1 - output) * grad_of_output
