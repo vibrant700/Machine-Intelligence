@@ -1,6 +1,8 @@
 import Base_Classes
 import numpy as np
 
+# layers:
+
 
 # 线性层类
 class Linear(Base_Classes.BaseLayer):
@@ -110,3 +112,37 @@ class Sigmoid(Base_Classes.BaseLayer):
     def backward(self, grad_of_output):
         output = self.cache["output"]
         return output * (1 - output) * grad_of_output
+
+
+# Batchnorm类
+# 为保证进度,先不实现,留待后期优化时实现
+class Batchnorm(Base_Classes.BaseLayer):
+    pass
+
+
+# loss_functions
+class CrossEntropyLoss(Base_Classes.BaseLoss):
+    def forward(self, prediction: np.ndarray, label: np.ndarray):
+        # 将预测值转化为概率
+        shifted_prediction = prediction - np.max(
+            prediction, axis=-1, keepdims=True
+        )
+        exp_prediction = np.exp(shifted_prediction)
+        sum = np.sum(exp_prediction, axis=-1, keepdims=True)
+        probability = exp_prediction / sum
+        self.cache["probability"] = probability
+        self.cache["label"] = label
+        batch_size = probability.shape[0]
+        correct_class_probs = probability[np.arange(batch_size), label]
+        loss = -np.log(correct_class_probs + 1e-12)
+        loss = np.mean(loss)
+        return loss
+
+    def backward(self):
+        probability = self.cache["probability"]
+        label = self.cache["label"]
+        batch_size = probability.shape[0]
+        grad_of_out = probability.copy()
+        grad_of_out[np.arange(batch_size), label] -= 1
+        grad_of_out = grad_of_out / batch_size
+        return grad_of_out
