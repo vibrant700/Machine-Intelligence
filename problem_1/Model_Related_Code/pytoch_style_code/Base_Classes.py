@@ -129,20 +129,21 @@ class BaseLoss(ABC):
 
 
 class BaseOptimizer(ABC):
-    def __init__(self, lr):
+    def __init__(self, lr, params: list[Parameter]):
         self.lr = lr
+        self.params = params
 
     @abstractmethod
-    def step(self, params: list[Parameter]):
+    def step(self):
         """
         根据梯度更新参数
         params: Parameter对象的列表
         """
         pass
 
-    def zero_grad(self, params: list[Parameter]):
+    def zero_grad(self):
         """
         用于将梯度置0
         """
-        for item in params:
+        for item in self.params:
             item.zero_grad()
