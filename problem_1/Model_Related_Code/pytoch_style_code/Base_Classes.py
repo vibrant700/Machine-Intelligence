@@ -101,6 +101,14 @@ class Sequential:
                 params_list.append(param)
         return params_list
 
+    def train(self):
+        for layer in self.layers:
+            layer.train()
+
+    def eval(self):
+        for layer in self.layers:
+            layer.eval()
+
     def __call__(self, x):
         return self.forward(x)
 

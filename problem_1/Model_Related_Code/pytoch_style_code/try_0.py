@@ -52,6 +52,8 @@ for training_times in range(epoch):
     indices = np.random.permutation(num_samples)
     train_features_shuffled = train_features[indices]
     train_labels_shuffled = train_label[indices]
+    # 设置为训练模式
+    net.train()
     for i in range(num_batches):
         # 准备数据
         start_idx = i * batch_size
