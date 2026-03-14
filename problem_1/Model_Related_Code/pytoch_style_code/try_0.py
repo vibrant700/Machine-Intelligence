@@ -19,7 +19,7 @@ epoch = 50
 batch_size = 64
 
 # 准备数据
-path = "working_dir\\Machine-Intelligence\\problem_1\\DATA\\MNIST"
+path = "problem_1\\DATA\\MNIST"
 train_features, train_label, test_features, test_labels = support.load_mnist(
     path
 )

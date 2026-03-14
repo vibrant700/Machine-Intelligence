@@ -694,7 +694,7 @@ def main():
     print("BP 神经网络 - MNIST 手写数字识别")
 
     # 数据路径
-    data_path = "Machine-Intelligence/problem_1/MNIST"
+    data_path = "problem_1/DATA/MNIST"
 
     # 第一步：加载数据
     print("\n第一步：加载 MNIST 数据集")
@@ -715,8 +715,8 @@ def main():
     model = NeuralNetwork()
 
     # 像搭积木一样构建网络
-    model.add(Linear(784, 128))   # 输入层 -> 隐含层1 (784 -> 256)
-    model.add(Sigmoid())            # 隐含层1 -> 隐含层2 (256 -> 128)  # 激活函数
+    model.add(Linear(784, 128))   # 输入层 -> 隐含层1 (784 -> 128)
+    model.add(Sigmoid())            # 激活函数
     model.add(Linear(128, 10))    # 隐含层2 -> 输出层 (128 -> 10)
 
   

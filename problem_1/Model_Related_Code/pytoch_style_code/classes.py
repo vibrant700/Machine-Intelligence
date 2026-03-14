@@ -45,7 +45,7 @@ class Linear(Base_Classes.BaseLayer):
             self.params["b"].grad = grad_b
 
         # 3. 计算损失对输入的梯度
-        grad_input = grad_of_output @ self.params["w"].value.T
+        grad_input = grad_of_output @ self.params["w"].value.T  # 形状(batch_size, input_dim)
         return grad_input
 
 
@@ -145,7 +145,7 @@ class CrossEntropyLoss(Base_Classes.BaseLoss):
         label = self.cache["label"]
         batch_size = probability.shape[0]
         grad_of_out = probability.copy()
-        grad_of_out[np.arange(batch_size), label] -= 1
+        grad_of_out[np.arange(batch_size), label] -= 1#probability - one_hot(label)即损失值对预测值的梯度
         grad_of_out = grad_of_out / batch_size
         return grad_of_out
 
