@@ -29,6 +29,7 @@ import Base_Classes
 import classes
 import numpy as np
 import support
+from torch.utils.tensorboard import SummaryWriter
 
 # 定义学习率
 lr = 0.001  # Adam 通常使用较小的学习率
@@ -67,6 +68,8 @@ net = Base_Classes.Sequential(
 optimizer = classes.Adam(lr=lr, params=net.parameters())
 # 定义损失函数
 loss_function = classes.CrossEntropyLoss()
+# 定义总结写入器
+writer = SummaryWriter("log")
 
 # 训练
 num_samples = train_features.shape[0]
@@ -103,6 +106,18 @@ for training_times in range(epoch):
         optimizer.step()
     average_loss = total_loss / num_batches
     print(f"完成第{training_times+1}轮训练，平均损失为{average_loss}")
+    writer.add_scalar("average_loss", average_loss, training_times)
+    # 设置为预测模式
+    if training_times % 5 == 0:
+        net.eval()
+        prediction = net(test_features)
+        final_prediction = np.argmax(prediction, axis=1)
+        correct = np.sum(final_prediction == test_labels)
+        total_test_num = len(test_labels)
+        accuracy = correct / total_test_num
+        # 显示并记录数据
+        writer.add_scalar("accuracy", accuracy, training_times)
+
 # 评估
 prediction = net(test_features)
 final_prediction = np.argmax(prediction, axis=1)
