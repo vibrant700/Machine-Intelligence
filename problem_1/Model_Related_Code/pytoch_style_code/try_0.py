@@ -15,6 +15,14 @@
   * 学习率推荐: 0.001 (比 SGD 小)
   * 优点: 收敛快，对参数不敏感，适合大多数场景
   * 缺点: 代码稍复杂，泛化性能可能略差于 SGD
+
+针对本代码结果的说明:
+总体准确率: 0.9829 (98.29%)
+从17轮训练开始平均损失落入0.01-0.001量级
+随后总体下降，局部表现出随机游走
+本模型在未使用Dropout层的情况下,训练轮数过多
+但是没有发生过拟合现象，具体原因未知
+可以考虑引入tensorboard模块以更好地观察每轮的损失和正确率
 """
 
 import Base_Classes
@@ -95,3 +103,7 @@ for training_times in range(epoch):
         optimizer.step()
     average_loss = total_loss / num_batches
     print(f"完成第{training_times+1}轮训练，平均损失为{average_loss}")
+# 评估
+prediction = net(test_features)
+final_prediction = np.argmax(prediction, axis=1)
+support.compute_overall_metrics(test_labels, final_prediction)
