@@ -138,6 +138,7 @@ def evaluate_per_class(y_true, y_pred, num_classes=10):
         f1_scores.append(f1)
         # print(f"{digit} {tp:<6} {fp:<6} {fn:<6} {tn:<6} ")
         # print(f"{precision:.4f} {recall:.4f} {f1:.4f}")
+        print(f"{digit}       {tp:<6}  {fp:<6}  {fn:<6}  {tn:<6}  {precision:.4f}  {recall:.4f}  {f1:.4f}")
     return precisions, recalls, f1_scores
 
 
