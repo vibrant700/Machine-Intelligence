@@ -694,7 +694,7 @@ def main():
     print("BP 神经网络 - MNIST 手写数字识别")
 
     # 数据路径
-    data_path = "Machine-Intelligence/problem_1/MNIST"
+    data_path = "problem_1/DATA/MNIST"
 
     # 第一步：加载数据
     print("\n第一步：加载 MNIST 数据集")
