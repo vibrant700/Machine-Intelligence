@@ -45,7 +45,9 @@ class Linear(Base_Classes.BaseLayer):
             self.params["b"].grad = grad_b
 
         # 3. 计算损失对输入的梯度
-        grad_input = grad_of_output @ self.params["w"].value.T  # 形状(batch_size, input_dim)
+        grad_input = (
+            grad_of_output @ self.params["w"].value.T
+        )  # 形状(batch_size, input_dim)
         return grad_input
 
 
@@ -116,10 +118,11 @@ class Sigmoid(Base_Classes.BaseLayer):
 
 # BatchNorm类 - 批归一化层
 class Batchnorm(Base_Classes.BaseLayer):
-    def __init__(self, num_features: int, eps: float = 1e-5, momentum: float = 0.1):
+    def __init__(
+        self, num_features: int, eps: float = 1e-5, momentum: float = 0.1
+    ):
         """
         批归一化层
-
         参数:
             num_features: 输入特征的数量
             eps: 防止除零的小常数
@@ -129,14 +132,11 @@ class Batchnorm(Base_Classes.BaseLayer):
         self.num_features = num_features
         self.eps = eps
         self.momentum = momentum
-
         # 可学习参数: gamma(缩放) 和 beta(平移)
         gamma = np.ones(num_features)
         beta = np.zeros(num_features)
-
         self.params["gamma"] = Base_Classes.Parameter(gamma)
         self.params["beta"] = Base_Classes.Parameter(beta)
-
         # 运行时统计量 (不可学习参数)
         self.running_mean = np.zeros(num_features)
         self.running_var = np.ones(num_features)
@@ -144,57 +144,50 @@ class Batchnorm(Base_Classes.BaseLayer):
     def forward(self, inputs: np.ndarray) -> np.ndarray:
         """
         前向传播
-
         参数:
             inputs: 输入数据，形状为 (batch_size, num_features)
-
         返回:
             归一化后的输出
         """
         # 清空缓存
         self.cache = {}
-
         if self.training:
-            # 训练模式 
-            # 沿着 batch 维度计算均值和方差
-            # mean 和 var 的形状: (num_features,)
+            # 训练模式
             mean = np.mean(inputs, axis=0)
             var = np.var(inputs, axis=0)
-
             # 缓存中间变量用于反向传播
             self.cache["inputs"] = inputs
             self.cache["mean"] = mean
             self.cache["var"] = var
             self.cache["batch_size"] = inputs.shape[0]
-
             # 更新运行时统计量 (移动平均)
-            self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean
-            self.running_var = (1 - self.momentum) * self.running_var + self.momentum * var
-
+            self.running_mean = (
+                1 - self.momentum
+            ) * self.running_mean + self.momentum * mean
+            self.running_var = (
+                1 - self.momentum
+            ) * self.running_var + self.momentum * var
         else:
-            # 推理模式 
+            # 推理模式
             # 使用运行时累积的统计量
             mean = self.running_mean
             var = self.running_var
-
         # 归一化: x_hat = (x - mean) / sqrt(var + eps)
         x_normalized = (inputs - mean) / np.sqrt(var + self.eps)
-
         # 缩放和平移: y = gamma * x_hat + beta
-        output = self.params["gamma"].value * x_normalized + self.params["beta"].value
-
+        output = (
+            self.params["gamma"].value * x_normalized
+            + self.params["beta"].value
+        )
         # 缓存归一化后的值用于反向传播
         self.cache["x_normalized"] = x_normalized
-
         return output
 
     def backward(self, grad_of_output: np.ndarray) -> np.ndarray:
         """
         反向传播
-
         参数:
             grad_of_output: 损失对输出的梯度，形状为 (batch_size, num_features)
-
         返回:
             损失对输入的梯度
         """
@@ -205,40 +198,43 @@ class Batchnorm(Base_Classes.BaseLayer):
         x_normalized = self.cache["x_normalized"]
         batch_size = self.cache["batch_size"]
         gamma = self.params["gamma"].value
-
-        # ========== 第一步: 计算损失对参数的梯度 ==========
-
-        # dL/dgamma = sum(dL/dy * x_hat)
         grad_gamma = np.sum(grad_of_output * x_normalized, axis=0)
         self.params["gamma"].grad = grad_gamma
-
         # dL/dbeta = sum(dL/dy)
         grad_beta = np.sum(grad_of_output, axis=0)
         self.params["beta"].grad = grad_beta
-
-        # ========== 第二步: 计算损失对输入的梯度 ==========
-
         # 中间变量
         std = np.sqrt(var + self.eps)
         x_centered = x - mean
-
         # dL/dx_hat = dL/dy * gamma
         grad_x_normalized = grad_of_output * gamma
-
         # dL/dvar 的梯度
         # dL/dvar = sum(dL/dx_hat * (x - mean) * (-0.5) * (var + eps)^(-3/2))
-        grad_var = np.sum(grad_x_normalized * x_centered * (-0.5) * (var + self.eps) ** (-1.5), axis=0)
-
-        # dL/dmean 的梯度
-        # dL/dmean = sum(dL/dx_hat * (-1 / std)) + dL/dvar * (-2 * mean(x) / batch_size)
-        grad_mean = np.sum(grad_x_normalized * (-1.0 / std), axis=0) + \
-                   grad_var * (-2.0 * np.mean(x_centered, axis=0))
-
-        # dL/dx = dL/dx_hat * (1 / std) + dL/dvar * (2 * (x - mean) / batch_size) + dL/dmean * (1 / batch_size)
-        grad_input = grad_x_normalized / std + \
-                    grad_var * (2.0 * x_centered / batch_size) + \
-                    grad_mean / batch_size
-
+        grad_var = np.sum(
+            grad_x_normalized
+            * x_centered
+            * (-0.5)
+            * (var + self.eps) ** (-1.5),
+            axis=0,
+        )
+        """
+        dL/dmean 的梯度
+        dL/dmean = sum(dL/dx_hat * (-1 / std))
+        + dL/dvar * (-2 * mean(x) / batch_size)
+        """
+        grad_mean = np.sum(
+            grad_x_normalized * (-1.0 / std), axis=0
+        ) + grad_var * (-2.0 * np.mean(x_centered, axis=0))
+        """
+        dL/dx = dL/dx_hat * (1 / std) +
+        dL/dvar * (2 * (x - mean) / batch_size) +
+        dL/dmean * (1 / batch_size)
+        """
+        grad_input = (
+            grad_x_normalized / std
+            + grad_var * (2.0 * x_centered / batch_size)
+            + grad_mean / batch_size
+        )
         return grad_input
 
 
@@ -267,7 +263,9 @@ class CrossEntropyLoss(Base_Classes.BaseLoss):
         label = self.cache["label"]
         batch_size = probability.shape[0]
         grad_of_out = probability.copy()
-        grad_of_out[np.arange(batch_size), label] -= 1#probability - one_hot(label)即损失值对预测值的梯度
+        grad_of_out[
+            np.arange(batch_size), label
+        ] -= 1  # probability - one_hot(label)即损失值对预测值的梯度
         grad_of_out = grad_of_out / batch_size
         return grad_of_out
 
@@ -284,7 +282,13 @@ class SGD(Base_Classes.BaseOptimizer):
 
 # Adam 优化器 (自适应矩估计)
 class Adam(Base_Classes.BaseOptimizer):
-    def __init__(self, lr: float, params: list, betas: tuple = (0.9, 0.999), eps: float = 1e-8):
+    def __init__(
+        self,
+        lr: float,
+        params: list,
+        betas: tuple = (0.9, 0.999),
+        eps: float = 1e-8,
+    ):
         """
         Adam 优化器
 
@@ -302,7 +306,7 @@ class Adam(Base_Classes.BaseOptimizer):
         # 初始化矩估计
         self.m = {}  # 一阶矩估计（梯度的移动平均）
         self.v = {}  # 二阶矩估计（梯度平方的移动平均）
-        self.t = 0   # 时间步
+        self.t = 0  # 时间步
 
         for i, param in enumerate(self.params):
             self.m[i] = np.zeros_like(param.value)
@@ -328,11 +332,11 @@ class Adam(Base_Classes.BaseOptimizer):
             self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * grad
 
             # 更新二阶矩估计（梯度平方的指数移动平均）
-            self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * (grad ** 2)
+            self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * (grad**2)
 
             # 计算偏差校正后的估计
-            m_hat = self.m[i] / (1 - self.beta1 ** self.t)
-            v_hat = self.v[i] / (1 - self.beta2 ** self.t)
+            m_hat = self.m[i] / (1 - self.beta1**self.t)
+            v_hat = self.v[i] / (1 - self.beta2**self.t)
 
             # 更新参数
             param.value -= self.lr * m_hat / (np.sqrt(v_hat) + self.eps)

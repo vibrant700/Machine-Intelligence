@@ -23,7 +23,7 @@ import numpy as np
 import support
 
 # 定义学习率
-lr= 0.001  # Adam 通常使用较小的学习率
+lr = 0.001  # Adam 通常使用较小的学习率
 # 定义学习轮数
 epoch = 50
 # 定义batch_size
@@ -31,7 +31,7 @@ batch_size = 64
 
 
 # 准备数据
-path = "problem_1\\DATA\\MNIST"
+path = "working_dir\\Machine-Intelligence\\problem_1\\DATA\\MNIST"
 train_features, train_label, test_features, test_labels = support.load_mnist(
     path
 )
@@ -39,29 +39,24 @@ train_features = support.preprocess_images(train_features)
 test_features = support.preprocess_images(test_features)
 
 # 定义网络
-# 层的顺序: Linear -> BatchNorm -> ReLU 
+# 层的顺序: Linear -> BatchNorm -> ReLU
 # BatchNorm 对未激活的值进行归一化
 net = Base_Classes.Sequential(
     [
         # 第一层: 784 -> 256
         classes.Linear(input_dim=784, output_dim=256, bias=True),
         classes.Batchnorm(num_features=256),  # BatchNorm: 归一化
-        classes.ReLU(),                        # ReLU: 激活
-
+        classes.ReLU(),  # ReLU: 激活
         # 第二层: 256 -> 128
         classes.Linear(input_dim=256, output_dim=128, bias=True),
         classes.Batchnorm(num_features=128),  # BatchNorm: 归一化
-        classes.ReLU(),                        # ReLU: 激活
-
+        classes.ReLU(),  # ReLU: 激活
         # 输出层: 128 -> 10
         classes.Linear(input_dim=128, output_dim=10, bias=True),
     ]
 )
 # 定义优化器
 optimizer = classes.Adam(lr=lr, params=net.parameters())
-
-
-
 # 定义损失函数
 loss_function = classes.CrossEntropyLoss()
 
