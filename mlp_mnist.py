@@ -715,8 +715,8 @@ def main():
     model = NeuralNetwork()
 
     # 像搭积木一样构建网络
-    model.add(Linear(784, 128))   # 输入层 -> 隐含层1 (784 -> 256)
-    model.add(Sigmoid())            # 隐含层1 -> 隐含层2 (256 -> 128)  # 激活函数
+    model.add(Linear(784, 128))   # 输入层 -> 隐含层1 (784 -> 128)
+    model.add(Sigmoid())            # 激活函数
     model.add(Linear(128, 10))    # 隐含层2 -> 输出层 (128 -> 10)
 
   
