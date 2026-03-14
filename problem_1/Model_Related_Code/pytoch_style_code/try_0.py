@@ -34,13 +34,13 @@ from torch.utils.tensorboard import SummaryWriter
 # 定义学习率
 lr = 0.001  # Adam 通常使用较小的学习率
 # 定义学习轮数
-epoch = 50
+epoch = 10
 # 定义batch_size
 batch_size = 64
 
 
 # 准备数据
-path = "working_dir\\Machine-Intelligence\\problem_1\\DATA\\MNIST"
+path = "problem_1\\DATA\\MNIST"
 train_features, train_label, test_features, test_labels = support.load_mnist(
     path
 )
