@@ -1,4 +1,5 @@
 import Base_Classes
+import functions
 import numpy as np
 
 # layers:
@@ -7,12 +8,28 @@ import numpy as np
 # 线性层类
 class Linear(Base_Classes.BaseLayer):
     # 初始化函数
-    def __init__(self, input_dim: int, output_dim: int, bias: bool):
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+        bias: bool,
+        weight_init: str = "xavier_uniform",
+    ):
         super().__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.bias = bias
-        w = np.random.normal(loc=0, scale=1, size=(input_dim, output_dim))
+        w_shape = (input_dim, output_dim)
+        if weight_init == "xavier_uniform":
+            w = functions.XavierUniform(w_shape)
+        elif weight_init == "xavier_normal":
+            w = functions.XavierNormal(w_shape)
+        elif weight_init == "kaiming_uniform":
+            w = functions.KaimingUniform(w_shape)
+        elif weight_init == "kaiming_normal":
+            w = functions.KaimingNormal(w_shape)
+        else:
+            w = functions.XavierUniform(w_shape)
         self.params["w"] = Base_Classes.Parameter(w)
         # 根据输入决定是否需要偏置值
         if bias:
