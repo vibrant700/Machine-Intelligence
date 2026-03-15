@@ -1,29 +1,23 @@
-"""
-本代码为实现代码
-经实验，本文件中代码与相关代码(Base_Classes.py和classes.py)部分(剩余部分尚未进行测试)可以跑通，损失可以稳定下降
-也可作为参考代码
-我会在注释中添加一些注意事项
-——LXY
+'''
+指标	数值
+总轮数	20 轮
+初始损失	0.192468
+最终损失	0.016338
+最终准确率	98.11%
 
-优化器说明:
-- SGD (随机梯度下降): 简单稳定，但需要仔细调参
-  * 学习率推荐: 0.01
-  * 优点: 代码简单，泛化性能好
-  * 缺点: 收敛较慢，对学习率敏感
+lr	0.01
+epoch	20 epochs
+batch	64	每批处理 64 个样本
+激活函数	ReLU
 
-- Adam (自适应矩估计): 自动调整学习率，收敛快
-  * 学习率推荐: 0.001 (比 SGD 小)
-  * 优点: 收敛快，对参数不敏感，适合大多数场景
-  * 缺点: 代码稍复杂，泛化性能可能略差于 SGD
-
-针对本代码结果的说明:
-总体准确率: 0.9829 (98.29%)
-从17轮训练开始平均损失落入0.01-0.001量级
-随后总体下降，局部表现出随机游走
-本模型在未使用Dropout层的情况下,训练轮数过多
-但是没有发生过拟合现象，具体原因未知
-可以考虑引入tensorboard模块以更好地观察每轮的损失和正确率
-"""
+Linear(784, 512)
+Batchnorm(num_features=512)
+ReLU()
+Linear(512, 128)
+Batchnorm(num_features=128)
+ReLU()
+Linear(128, 10)
+'''
 
 import Base_Classes
 import classes
@@ -32,7 +26,7 @@ import support
 from torch.utils.tensorboard import SummaryWriter
 
 # 定义学习率
-lr = 0.001  # Adam 通常使用较小的学习率
+lr = 0.01  # Adam 通常使用较小的学习率
 # 定义学习轮数
 epoch = 20
 # 定义batch_size
@@ -52,12 +46,12 @@ test_features = support.preprocess_images(test_features)
 # BatchNorm 对未激活的值进行归一化
 net = Base_Classes.Sequential(
     [
-        # 第一层: 784 -> 256
-        classes.Linear(784, 256, bias=True),
-        classes.Batchnorm(num_features=256),  # BatchNorm: 归一化
+        # 第一层: 784 -> 512 (扩展维度)
+        classes.Linear(784, 512, bias=True),
+        classes.Batchnorm(num_features=512),  # BatchNorm: 归一化
         classes.ReLU(),  # ReLU: 激活
-        # 第二层: 256 -> 128
-        classes.Linear(256, 128, bias=True),
+        # 第二层: 512 -> 128
+        classes.Linear(512, 128, bias=True),
         classes.Batchnorm(num_features=128),  # BatchNorm: 归一化
         classes.ReLU(),  # ReLU: 激活
         # 输出层: 128 -> 10
