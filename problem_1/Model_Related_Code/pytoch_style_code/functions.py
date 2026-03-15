@@ -19,7 +19,6 @@ def XavierUniform(shape: tuple) -> np.ndarray:
 
 # Xavier正态分布初始化
 def XavierNormal(shape: tuple) -> np.ndarray:
-    shape = input.shape
     dim_in = shape[0]
     dim_out = shape[1]
     range = np.sqrt(2 / (dim_in + dim_out))
@@ -29,7 +28,6 @@ def XavierNormal(shape: tuple) -> np.ndarray:
 
 # Kaiming均匀分布初始化
 def KaimingUniform(shape: tuple) -> np.ndarray:
-    shape = input.shape
     dim_in = shape[0]
     range = np.sqrt(6 / dim_in)
     result = np.random.uniform(low=-range, high=range, size=shape)
@@ -38,7 +36,6 @@ def KaimingUniform(shape: tuple) -> np.ndarray:
 
 # Kaiming正态分布初始化
 def KaimingNormal(shape: tuple) -> np.ndarray:
-    shape = input.shape
     dim_in = shape[0]
     range = np.sqrt(2 / dim_in)
     result = np.random.normal(loc=0, scale=range, size=shape)
