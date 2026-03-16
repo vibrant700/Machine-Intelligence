@@ -197,3 +197,20 @@ def extract_features_batch(images):
     all_feats = StandardScaler().fit_transform(all_feats)
     return np.array(all_feats)
 
+def fourier_batch_process(images):
+    """
+    将图像批量提取特征
+
+    参数:
+        images : np.ndarray, 形状 (n_samples, 28, 28)
+
+    返回:
+        np.ndarray, 形状 (n_samples, n_features)
+    """
+    extractor = FeatureExtractor()
+    all_feats = []
+    for img in images:
+        feat = extractor.fourier_features(img)
+        all_feats.append(feat)
+    all_feats = StandardScaler().fit_transform(all_feats)
+    return np.array(all_feats)

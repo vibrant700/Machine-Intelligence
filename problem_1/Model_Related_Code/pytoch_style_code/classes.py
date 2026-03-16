@@ -357,3 +357,126 @@ class Adam(Base_Classes.BaseOptimizer):
 
             # 更新参数
             param.value -= self.lr * m_hat / (np.sqrt(v_hat) + self.eps)
+class ResidualBlock(Base_Classes.BaseLayer):
+    def __init__(
+        self,
+        dim: int,
+        bias: bool = True,
+        weight_init: str = "xavier_uniform",
+    ):
+        """
+        最基础残差块
+
+        结构:
+        x → Linear → ReLU → Linear → +x → ReLU
+        """
+        super().__init__()
+
+        self.dim = dim
+        self.bias = bias
+
+        w_shape = (dim, dim)
+
+        if weight_init == "xavier_uniform":
+            w1 = functions.XavierUniform(w_shape)
+            w2 = functions.XavierUniform(w_shape)
+        elif weight_init == "xavier_normal":
+            w1 = functions.XavierNormal(w_shape)
+            w2 = functions.XavierNormal(w_shape)
+        elif weight_init == "kaiming_uniform":
+            w1 = functions.KaimingUniform(w_shape)
+            w2 = functions.KaimingUniform(w_shape)
+        elif weight_init == "kaiming_normal":
+            w1 = functions.KaimingNormal(w_shape)
+            w2 = functions.KaimingNormal(w_shape)
+        else:
+            w1 = functions.XavierUniform(w_shape)
+            w2 = functions.XavierUniform(w_shape)
+
+        self.params["w1"] = Base_Classes.Parameter(w1)
+        self.params["w2"] = Base_Classes.Parameter(w2)
+
+        if bias:
+            b1 = np.zeros(dim)
+            b2 = np.zeros(dim)
+            self.params["b1"] = Base_Classes.Parameter(b1)
+            self.params["b2"] = Base_Classes.Parameter(b2)
+
+    def relu(self, x):
+        return np.maximum(0, x)
+
+    def relu_grad(self, x):
+        return (x > 0).astype(float)
+
+    def forward(self, inputs: np.ndarray) -> np.ndarray:
+
+        self.cache = {}
+        self.cache["input"] = inputs
+
+        # 第一层
+        z1 = inputs @ self.params["w1"].value
+        if self.bias:
+            z1 = z1 + self.params["b1"].value
+
+        a1 = self.relu(z1)
+
+        # 第二层
+        z2 = a1 @ self.params["w2"].value
+        if self.bias:
+            z2 = z2 + self.params["b2"].value
+
+        # 残差连接
+        out_before_relu = inputs + z2
+        output = self.relu(out_before_relu)
+
+        # cache
+        self.cache["z1"] = z1
+        self.cache["a1"] = a1
+        self.cache["z2"] = z2
+        self.cache["out_before_relu"] = out_before_relu
+
+        return output
+
+    def backward(self, grad_of_output: np.ndarray) -> np.ndarray:
+
+        x = self.cache["input"]
+        z1 = self.cache["z1"]
+        a1 = self.cache["a1"]
+        out_before_relu = self.cache["out_before_relu"]
+
+        # ReLU 梯度
+        grad = grad_of_output * self.relu_grad(out_before_relu)
+
+        # 残差路径
+        grad_x_residual = grad
+
+        # 主路径
+        grad_z2 = grad
+
+        # w2
+        grad_w2 = a1.T @ grad_z2
+        self.params["w2"].grad = grad_w2
+
+        if self.bias:
+            grad_b2 = np.sum(grad_z2, axis=0)
+            self.params["b2"].grad = grad_b2
+
+        grad_a1 = grad_z2 @ self.params["w2"].value.T
+
+        # ReLU
+        grad_z1 = grad_a1 * self.relu_grad(z1)
+
+        # w1
+        grad_w1 = x.T @ grad_z1
+        self.params["w1"].grad = grad_w1
+
+        if self.bias:
+            grad_b1 = np.sum(grad_z1, axis=0)
+            self.params["b1"].grad = grad_b1
+
+        grad_x_main = grad_z1 @ self.params["w1"].value.T
+
+        # 合并梯度
+        grad_input = grad_x_main + grad_x_residual
+
+        return grad_input
