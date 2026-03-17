@@ -46,28 +46,30 @@ python problem_1/Model_Related_Code/pytoch_style_code/try_features1.py
 分析说明：
   宏平均和微平均接近，说明各类别样本量相对均衡
 """
+
+import pickle
+
 import Base_Classes
 import classes
 import numpy as np
 import support
 from feature_extractor import extract_features_batch
-from torch.utils.tensorboard import SummaryWriter
 
 # 定义学习率
-lr = 0.005  # Adam 通常使用较小的学习率
+lr = 1e-5  # Adam 通常使用较小的学习率
 # 定义学习轮数
-epoch = 20
+epoch = 50
 # 定义batch_size
 batch_size = 64
 
 
 # 准备数据
-path = "problem_1/DATA/MNIST"
-train_images, train_label, test_images, test_labels = support.load_mnist(
-    path
-)
+path = "working_dir\\Machine-Intelligence\\problem_1\\DATA\\MNIST"
+train_images, train_label, test_images, test_labels = support.load_mnist(path)
 
-train_features = extract_features_batch(train_images, save_scaler_if_needed=True)
+train_features = extract_features_batch(
+    train_images, save_scaler_if_needed=True
+)
 test_features = extract_features_batch(test_images)
 input_dims = train_features.shape[1]
 # 定义网络
@@ -75,31 +77,40 @@ input_dims = train_features.shape[1]
 # BatchNorm 对未激活的值进行归一化
 net = Base_Classes.Sequential(
     [
-        # 第一层: 784 -> 256
-        classes.Linear(input_dims, 512, bias=True),
+        # 第一层: 1439-> 512
+        classes.Linear(
+            input_dims, 512, bias=True, weight_init="kaiming_normal"
+        ),
         classes.Batchnorm(num_features=512),  # BatchNorm: 归一化
+        classes.Dropout(p=0.1),
         classes.ReLU(),  # ReLU: 激活
-
-        classes.Linear(512, 256, bias=True),
+        # 第二层:512->256
+        classes.Linear(512, 256, bias=True, weight_init="kaiming_normal"),
         classes.Batchnorm(num_features=256),  # BatchNorm: 归一化
         classes.ReLU(),  # ReLU: 激活
-        # 第二层: 256 -> 128
-        classes.Linear(256, 128, bias=True),
+        # 第三层:256->128
+        classes.Linear(256, 128, bias=True, weight_init="kaiming_normal"),
         classes.Batchnorm(num_features=128),  # BatchNorm: 归一化
+        classes.Dropout(p=0.1),
         classes.ReLU(),  # ReLU: 激活
-        # 输出层: 128 -> 10
-        classes.Linear(128, 64, bias=True),
+        # 第四层: 128 -> 64
+        classes.Linear(128, 64, bias=True, weight_init="kaiming_normal"),
         classes.Batchnorm(num_features=64),  # BatchNorm: 归一化
+        classes.Dropout(p=0.1),
         classes.ReLU(),  # ReLU: 激活
-        classes.Linear(64, 10, bias=True),
+        # 第五层:64->32
+        classes.Linear(64, 32, bias=True, weight_init="kaiming_normal"),
+        classes.Batchnorm(num_features=32),  # BatchNorm: 归一化
+        classes.Dropout(p=0.1),
+        classes.ReLU(),  # ReLU: 激活
+        # 输出层:32->10
+        classes.Linear(32, 10, bias=True, weight_init="kaiming_normal"),
     ]
 )
 # 定义优化器
 optimizer = classes.Adam(lr=lr, params=net.parameters())
 # 定义损失函数
 loss_function = classes.CrossEntropyLoss()
-# 定义总结写入器
-writer = SummaryWriter("log")
 
 # 训练
 num_samples = train_features.shape[0]
@@ -136,28 +147,24 @@ for training_times in range(epoch):
         optimizer.step()
     average_loss = total_loss / num_batches
     print(f"完成第{training_times+1}轮训练，平均损失为{average_loss}")
-    writer.add_scalar("average_loss", average_loss, training_times)
     # 设置为预测模式
-    if training_times % 5 == 0:
+    if True:
         net.eval()
         prediction = net(test_features)
         final_prediction = np.argmax(prediction, axis=1)
         correct = np.sum(final_prediction == test_labels)
         total_test_num = len(test_labels)
         accuracy = correct / total_test_num
+        print(f"第{training_times+1}次训练后，在测试集上,正确率为{accuracy}")
         # 显示并记录数据
-        writer.add_scalar("accuracy", accuracy, training_times)
 
 # 评估
 prediction = net(test_features)
 final_prediction = np.argmax(prediction, axis=1)
 support.compute_overall_metrics(test_labels, final_prediction)
 
-# ============ 保存模型 ============
-import pickle
-
 # 保存模型
-model_path = "problem_1/Model_Related_Code/pytoch_style_code/try_features1_model.pkl"
-with open(model_path, 'wb') as f:
+model_path = "working_dir\\Machine-Intelligence\\problem_1\\mnist_service\\backend\\try_features1_model.pkl"
+with open(model_path, "wb") as f:
     pickle.dump(net, f)
 print(f"[OK] Model saved to: {model_path}")
