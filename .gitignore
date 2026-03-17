@@ -11,3 +11,5 @@ log/
 
 # TensorBoard events
 events.out.tfevents.*
+
+.idea
