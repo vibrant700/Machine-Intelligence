@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>手写数字识别</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Patrick+Hand&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="paper-dot-layer" aria-hidden="true"></div>
+    <div class="scribble-shape shape-a" aria-hidden="true"></div>
+    <div class="scribble-shape shape-b" aria-hidden="true"></div>
+    <div class="scribble-shape shape-c" aria-hidden="true"></div>
+
+    <main class="container">
+      <header class="hero-card tape-deco">
+        <h1>手写数字识别实验板</h1>
+        <p>在画板中输入数字，或上传图片，前端将完成预处理并调用后端识别接口。</p>
+      </header>
+
+      <section class="grid-layout" aria-label="数字识别控制台">
+        <article class="card draw-card">
+          <h2>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 16.5V20h3.5L19 8.5 15.5 5 4 16.5z"></path>
+              <path d="m14 6 4 4"></path>
+            </svg>
+            输入区域
+          </h2>
+          <div class="toolbar">
+            <label for="brushSize">画笔粗细</label>
+            <input
+              id="brushSize"
+              type="range"
+              min="4"
+              max="40"
+              step="1"
+              value="18"
+              aria-label="调整画笔粗细"
+            />
+            <output id="brushSizeValue" for="brushSize">18px</output>
+            <label for="brushColor">画笔颜色</label>
+            <input id="brushColor" type="color" value="#2D2D2D" aria-label="调整画笔颜色" />
+          </div>
+
+          <div class="canvas-wrap">
+            <canvas id="drawCanvas" width="280" height="280" aria-label="手写数字画布"></canvas>
+          </div>
+
+          <div class="action-row">
+            <button id="undoBtn" class="btn tonal" type="button">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17 4 12l5-5"></path><path d="M20 20a8 8 0 0 0-8-8H4"></path></svg>
+              撤销
+            </button>
+            <button id="clearBtn" class="btn outlined" type="button">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m19 6-1 14H6L5 6"></path></svg>
+              清除
+            </button>
+            <label class="btn outlined upload-btn" for="fileInput">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4"></path><path d="m7 9 5-5 5 5"></path><path d="M5 20h14"></path></svg>
+              上传图片
+            </label>
+            <input
+              id="fileInput"
+              type="file"
+              accept="image/png,image/jpeg,image/gif"
+              aria-label="上传数字图片"
+            />
+          </div>
+
+          <div class="action-row">
+            <button id="predictBtn" class="btn filled" type="button">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z"></path></svg>
+              开始识别
+            </button>
+            <button id="cancelBtn" class="btn text" type="button">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19"></path><path d="M19 5 5 19"></path></svg>
+              取消全部请求
+            </button>
+          </div>
+         
+        </article>
+
+        <article class="card result-card">
+          <h2>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M7 16V8"></path><path d="M12 16V5"></path><path d="M17 16v-4"></path></svg>
+            识别结果
+          </h2>
+          <div class="result-main">
+            <div class="big-digit" id="predictedDigit" aria-live="polite">-</div>
+            <div class="meta">
+              <div>
+                <span class="meta-label">置信度</span>
+                <div class="progress">
+                  <div id="confidenceBar" class="progress-bar"></div>
+                </div>
+                <span id="confidenceText">0%</span>
+              </div>
+              <div>
+                <span class="meta-label">总耗时</span>
+                <span id="timeText">0 ms</span>
+              </div>
+              <div>
+                <span class="meta-label">预处理耗时</span>
+                <span id="preprocessTimeText">0 ms</span>
+              </div>
+              <div>
+                <span class="meta-label">请求耗时</span>
+                <span id="apiTimeText">0 ms</span>
+              </div>
+            </div>
+          </div>
+
+          <h3>特征可视化（28x28）</h3>
+          <div class="preview-row">
+            <div class="preview-item">
+              <span>灰度图</span>
+              <canvas id="processedCanvas" width="28" height="28"></canvas>
+            </div>
+            <div class="preview-item">
+              <span>热力图</span>
+              <canvas id="heatmapCanvas" width="28" height="28"></canvas>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="card history-card tack-deco">
+        <h2>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v5H6z"></path><path d="M12 8v13"></path><path d="M9 21h6"></path></svg>
+          历史记录
+        </h2>
+        <div id="historyList" class="history-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <template id="historyItemTemplate">
+      <article class="history-item">
+        <div class="history-head">
+          <strong class="history-digit"></strong>
+          <span class="history-time"></span>
+        </div>
+        <div class="history-sub"></div>
+      </article>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
