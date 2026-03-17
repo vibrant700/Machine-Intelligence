@@ -30,7 +30,7 @@ const drawHistory = [];
 const resultHistory = [];
 const MAX_HISTORY = 20;
 const MAX_DRAW_HISTORY = 30;
-const DEFAULT_API_ENDPOINT = "http://localhost:8000/predict";
+const DEFAULT_API_ENDPOINT = "http://localhost:5000/predict";
 
 let isDrawing = false;
 let lastPoint = null;
@@ -267,89 +267,142 @@ function cancelAllRequests() {
   setStatus("已取消全部请求", true);
 }
 
-function preprocessImage(sourceCanvas, options = { applyEnhancement: true }) {
+function preprocessImage(sourceCanvas, options = { applyEnhancement: false }) {
   const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = sourceCanvas.width;
-  tempCanvas.height = sourceCanvas.height;
+  tempCanvas.width = 28;
+  tempCanvas.height = 28;
   const tempCtx = tempCanvas.getContext("2d", { willReadFrequently: true });
-  tempCtx.drawImage(sourceCanvas, 0, 0);
-  const source = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-  const intensity = new Float32Array(tempCanvas.width * tempCanvas.height);
 
-  for (let i = 0; i < source.data.length; i += 4) {
-    const r = source.data[i];
-    const g = source.data[i + 1];
-    const b = source.data[i + 2];
-    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-    const inv = 255 - gray;
-    intensity[i / 4] = inv < 24 ? 0 : inv;
+  const srcW = sourceCanvas.width;
+  const srcH = sourceCanvas.height;
+  const srcCtx = sourceCanvas.getContext("2d", { willReadFrequently: true });
+  const srcImageData = srcCtx.getImageData(0, 0, srcW, srcH);
+  const src = srcImageData.data;
+
+  const gray = new Uint8Array(srcW * srcH);
+  let sum = 0;
+  for (let i = 0; i < srcW * srcH; i += 1) {
+    const idx = i * 4;
+    const r = src[idx];
+    const g = src[idx + 1];
+    const b = src[idx + 2];
+    const v = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+    gray[i] = v;
+    sum += v;
   }
 
-  const bbox = findBoundingBox(intensity, tempCanvas.width, tempCanvas.height);
-  if (!bbox) {
-    throw new Error("未检测到有效笔迹");
+  const mean = sum / (srcW * srcH);
+  if (mean > 127) {
+    for (let i = 0; i < gray.length; i += 1) {
+      gray[i] = 255 - gray[i];
+    }
   }
 
-  const cropCanvas = document.createElement("canvas");
-  cropCanvas.width = 28;
-  cropCanvas.height = 28;
-  const cropCtx = cropCanvas.getContext("2d", { willReadFrequently: true });
-  cropCtx.fillStyle = "#000000";
-  cropCtx.fillRect(0, 0, 28, 28);
-
-  const pad = Math.max(Math.round(Math.max(bbox.w, bbox.h) * 0.2), 2);
-  const sx = Math.max(0, bbox.x - pad);
-  const sy = Math.max(0, bbox.y - pad);
-  const sw = Math.min(tempCanvas.width - sx, bbox.w + pad * 2);
-  const sh = Math.min(tempCanvas.height - sy, bbox.h + pad * 2);
-
-  const normalizedCanvas = document.createElement("canvas");
-  normalizedCanvas.width = sw;
-  normalizedCanvas.height = sh;
-  const normalizedCtx = normalizedCanvas.getContext("2d");
-  const patch = imageDataFromIntensity(intensity, tempCanvas.width, tempCanvas.height);
-  tempCtx.putImageData(patch, 0, 0);
-  normalizedCtx.drawImage(tempCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
-
-  const fit = fitContain(sw, sh, 20, 20);
-  const offsetX = Math.floor((28 - fit.w) / 2);
-  const offsetY = Math.floor((28 - fit.h) / 2);
-  cropCtx.drawImage(normalizedCanvas, 0, 0, sw, sh, offsetX, offsetY, fit.w, fit.h);
-
-  let imageData = cropCtx.getImageData(0, 0, 28, 28);
-  const gray = new Float32Array(28 * 28);
-  for (let i = 0; i < imageData.data.length; i += 4) {
-    gray[i / 4] = imageData.data[i];
+  let minX = srcW;
+  let minY = srcH;
+  let maxX = -1;
+  let maxY = -1;
+  let active = 0;
+  const thresh = options.applyEnhancement ? 48 : 96;
+  for (let y = 0; y < srcH; y += 1) {
+    for (let x = 0; x < srcW; x += 1) {
+      const v = gray[y * srcW + x];
+      if (v >= thresh) {
+        active += 1;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
   }
 
-  let enhanced = gray;
-  if (options.applyEnhancement) {
-    enhanced = edgeEnhance(morphClose(gray, 28, 28), 28, 28);
+  if (maxX >= minX && maxY >= minY) {
+    const pad = options.applyEnhancement ? 8 : 2;
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(srcW - 1, maxX + pad);
+    maxY = Math.min(srcH - 1, maxY + pad);
+    const cropW = maxX - minX + 1;
+    const cropH = maxY - minY + 1;
+
+    const cropCanvas = document.createElement("canvas");
+    cropCanvas.width = cropW;
+    cropCanvas.height = cropH;
+    const cropCtx = cropCanvas.getContext("2d", { willReadFrequently: true });
+    const cropImageData = cropCtx.createImageData(cropW, cropH);
+    const dst = cropImageData.data;
+    for (let y = 0; y < cropH; y += 1) {
+      const sy = minY + y;
+      for (let x = 0; x < cropW; x += 1) {
+        const sx = minX + x;
+        const v = gray[sy * srcW + sx];
+        const outIdx = (y * cropW + x) * 4;
+        dst[outIdx] = v;
+        dst[outIdx + 1] = v;
+        dst[outIdx + 2] = v;
+        dst[outIdx + 3] = 255;
+      }
+    }
+    cropCtx.putImageData(cropImageData, 0, 0);
+
+    const scale = 20 / Math.max(cropW, cropH);
+    const newW = Math.max(1, Math.round(cropW * scale));
+    const newH = Math.max(1, Math.round(cropH * scale));
+    const left = Math.floor((28 - newW) / 2);
+    const top = Math.floor((28 - newH) / 2);
+
+    tempCtx.clearRect(0, 0, 28, 28);
+    tempCtx.fillStyle = "black";
+    tempCtx.fillRect(0, 0, 28, 28);
+    tempCtx.imageSmoothingEnabled = true;
+    tempCtx.imageSmoothingQuality = "high";
+    tempCtx.drawImage(cropCanvas, 0, 0, cropW, cropH, left, top, newW, newH);
+
+    const ratio = active / (srcW * srcH);
+    if (options.applyEnhancement && ratio < 0.02) {
+      const copy = document.createElement("canvas");
+      copy.width = 28;
+      copy.height = 28;
+      const copyCtx = copy.getContext("2d", { willReadFrequently: true });
+      copyCtx.drawImage(tempCanvas, 0, 0);
+      tempCtx.globalCompositeOperation = "lighter";
+      tempCtx.drawImage(copy, 1, 0);
+      tempCtx.drawImage(copy, -1, 0);
+      tempCtx.drawImage(copy, 0, 1);
+      tempCtx.drawImage(copy, 0, -1);
+      tempCtx.globalCompositeOperation = "source-over";
+    }
+  } else {
+    tempCtx.clearRect(0, 0, 28, 28);
+    tempCtx.fillStyle = "black";
+    tempCtx.fillRect(0, 0, 28, 28);
+    tempCtx.drawImage(sourceCanvas, 0, 0, 28, 28);
   }
 
-  const finalImageData = new ImageData(28, 28);
-  const normalizedPixels = [];
+  const imageData = tempCtx.getImageData(0, 0, 28, 28);
+  const data = imageData.data;
+
+  const normalizedPixels = new Float32Array(28 * 28);
   const binary = new Uint8Array(28 * 28);
-  for (let i = 0; i < enhanced.length; i += 1) {
-    const value = Math.max(0, Math.min(255, enhanced[i]));
-    finalImageData.data[i * 4] = value;
-    finalImageData.data[i * 4 + 1] = value;
-    finalImageData.data[i * 4 + 2] = value;
-    finalImageData.data[i * 4 + 3] = 255;
-    const normalized = Number((value / 255).toFixed(6));
-    normalizedPixels.push(normalized);
-    binary[i] = Math.round(normalized * 255);
+  for (let i = 0; i < 28 * 28; i += 1) {
+    const idx = i * 4;
+    const v = data[idx];
+    normalizedPixels[i] = v / 255.0;
+    binary[i] = v >= 32 ? 255 : 0;
   }
 
-  cropCtx.putImageData(finalImageData, 0, 0);
+  const base64 = tempCanvas.toDataURL("image/png");
 
   return {
-    grayscaleImageData: finalImageData,
-    normalizedPixels,
-    binary,
-    base64: cropCanvas.toDataURL("image/png"),
+    imageData: imageData,
+    grayscaleImageData: imageData,
+    normalizedPixels: Array.from(normalizedPixels),
+    binary: binary,
+    base64: base64,
   };
 }
+
 
 function renderProcessedPreview(imageData, normalizedPixels) {
   processedCtx.putImageData(imageData, 0, 0);
@@ -477,6 +530,7 @@ function renderHistory() {
 }
 
 function setStatus(text, isError = false, isLoading = false) {
+  if (!statusText) return;
   statusText.textContent = text;
   statusText.classList.toggle("error", isError);
   statusText.classList.toggle("loading", isLoading);

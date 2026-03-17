@@ -67,7 +67,7 @@ train_images, train_label, test_images, test_labels = support.load_mnist(
     path
 )
 
-train_features = extract_features_batch(train_images)
+train_features = extract_features_batch(train_images, save_scaler_if_needed=True)
 test_features = extract_features_batch(test_images)
 input_dims = train_features.shape[1]
 # 定义网络
@@ -152,3 +152,12 @@ for training_times in range(epoch):
 prediction = net(test_features)
 final_prediction = np.argmax(prediction, axis=1)
 support.compute_overall_metrics(test_labels, final_prediction)
+
+# ============ 保存模型 ============
+import pickle
+
+# 保存模型
+model_path = "problem_1/Model_Related_Code/pytoch_style_code/try_features1_model.pkl"
+with open(model_path, 'wb') as f:
+    pickle.dump(net, f)
+print(f"[OK] Model saved to: {model_path}")

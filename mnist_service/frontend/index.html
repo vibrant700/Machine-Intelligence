@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Patrick+Hand&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=2" />
   </head>
   <body>
     <div class="paper-dot-layer" aria-hidden="true"></div>
@@ -22,6 +22,7 @@
       <header class="hero-card tape-deco">
         <h1>手写数字识别实验板</h1>
         <p>在画板中输入数字，或上传图片，前端将完成预处理并调用后端识别接口。</p>
+        <div id="statusText" class="status-text" aria-live="polite"></div>
       </header>
 
       <section class="grid-layout" aria-label="数字识别控制台">
@@ -150,6 +151,6 @@
       </article>
     </template>
 
-    <script type="module" src="./app.js"></script>
+    <script src="./app.js?v=2"></script>
   </body>
 </html>

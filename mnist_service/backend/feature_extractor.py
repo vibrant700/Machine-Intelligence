@@ -6,6 +6,37 @@ from skimage.filters import gabor
 # from mahotas.features import zernike_moments
 from scipy.ndimage import convolve
 from sklearn.preprocessing import StandardScaler
+import pickle
+import os
+
+# Scaler 保存路径
+SCALER_PATH = os.path.join(os.path.dirname(__file__), 'feature_scaler.pkl')
+
+# 全局 Scaler
+_global_scaler = None
+
+def save_scaler(scaler):
+    """保存 Scaler 到文件"""
+    with open(SCALER_PATH, 'wb') as f:
+        pickle.dump(scaler, f)
+    print(f"[INFO] Scaler saved to: {SCALER_PATH}")
+
+def load_scaler():
+    """从文件加载 Scaler"""
+    global _global_scaler
+    if os.path.exists(SCALER_PATH):
+        with open(SCALER_PATH, 'rb') as f:
+            _global_scaler = pickle.load(f)
+        print(f"[INFO] Scaler loaded from: {SCALER_PATH}")
+        return _global_scaler
+    else:
+        print("[WARNING] Scaler file not found, using StandardScaler")
+        return StandardScaler()
+
+def get_scaler():
+    """获取当前的 Scaler"""
+    global _global_scaler
+    return _global_scaler
 
 class FeatureExtractor:
     """
@@ -173,16 +204,19 @@ class FeatureExtractor:
         # 展平
         return img.flatten()
 
-def extract_features_batch(images):
+def extract_features_batch(images, save_scaler_if_needed=False):
     """
     将图像批量提取特征
 
     参数:
         images : np.ndarray, 形状 (n_samples, 28, 28)
+        save_scaler_if_needed : bool, 是否保存 Scaler（仅训练时使用）
 
     返回:
         np.ndarray, 形状 (n_samples, n_features)
     """
+    global _global_scaler
+
     extractor = FeatureExtractor()
     all_feats = []
     for img in images:
@@ -194,6 +228,25 @@ def extract_features_batch(images):
             extractor.zoning_features(img)
         ])
         all_feats.append(feat)
-    all_feats = StandardScaler().fit_transform(all_feats)
-    return np.array(all_feats)
+    all_feats = np.array(all_feats)
+
+    # 获取或初始化 Scaler
+    if _global_scaler is None:
+        _global_scaler = load_scaler()
+
+    # 如果需要保存 Scaler（训练时）
+    if save_scaler_if_needed and not os.path.exists(SCALER_PATH):
+        print("[INFO] Training mode: fitting and saving new Scaler...")
+        _global_scaler = StandardScaler().fit(all_feats)
+        save_scaler(_global_scaler)
+
+    # 使用 Scaler 进行 transform
+    if _global_scaler is not None:
+        all_feats = _global_scaler.transform(all_feats)
+    else:
+        # 如果没有 Scaler，使用简单的归一化
+        print("[WARNING] No Scaler available, using simple normalization")
+        all_feats = all_feats / 255.0
+
+    return all_feats
 

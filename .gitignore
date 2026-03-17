@@ -1,1 +1,13 @@
-__pycache__
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Model files (too large for GitHub)
+*.pkl
+
+# Training logs
+log/
+
+# TensorBoard events
+events.out.tfevents.*

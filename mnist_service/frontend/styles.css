@@ -461,3 +461,29 @@ label.upload-btn:focus-visible {
     transform: none !important;
   }
 }
+
+.status-text {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: var(--muted);
+  border-radius: var(--radius-wobbly-md);
+  text-align: center;
+  font-weight: bold;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-text.error {
+  background-color: #ffe0e0;
+  color: var(--danger);
+  border: 2px solid var(--danger);
+}
+
+.status-text.loading {
+  background-color: #e0f0ff;
+  color: var(--accent-blue);
+  border: 2px solid var(--accent-blue);
+}
+
