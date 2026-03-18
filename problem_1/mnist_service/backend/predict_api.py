@@ -4,11 +4,13 @@ MNIST 数字识别预测 API - 兼容前端格式
 """
 
 import base64
+import os
 import pickle
 from io import BytesIO
 
 import cv2
 import numpy as np
+from feature_extractor import extract_features_batch
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from PIL import Image
@@ -17,17 +19,27 @@ app = Flask(__name__)
 CORS(app)  # 允许跨域请求
 
 print("Loading model...")
-import os
-
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "pixel_model.pkl")
+# 加载MLP模型
+MLP_1_PATH = os.path.join(os.path.dirname(__file__), "MLP_1.pkl")
 try:
-    with open(MODEL_PATH, "rb") as f:
-        net = pickle.load(f)
-    net.eval()
-    print("[OK] Model loaded successfully")
+    with open(MLP_1_PATH, "rb") as f:
+        MLP_1 = pickle.load(f)
+    MLP_1.eval()
+    print("[OK] MLP_1 loaded successfully")
 except FileNotFoundError:
     print("[ERROR] Model file not found, please train model first")
-    net = None
+    MLP_1 = None
+# 加载CNN模型
+CNN_PATH = os.path.join(os.path.dirname(__file__), "CNN.pkl")
+try:
+    with open(MLP_1_PATH, "rb") as f:
+        CNN = pickle.load(f)
+    CNN.eval()
+    print("[OK] MLP_1 loaded successfully")
+except FileNotFoundError:
+    print("[ERROR] Model file not found, please train model first")
+    CNN = None
+net = MLP_1
 
 
 def base64_to_image(base64_string):
@@ -150,9 +162,10 @@ def predict():
         # 确保是 28x28
         if img.shape != (28, 28):
             img = cv2.resize(img, (28, 28))
-
-        # 展平为 784 维（像素模型）
-        features = img.reshape(1, 784).astype(np.float32)
+        # 进行数据预处理
+        img_uint8 = (img * 255).astype(np.uint8)
+        img_batch = img_uint8.reshape(1, 28, 28)
+        features = extract_features_batch(img_batch)
 
         # 预测
         logits = net(features)
@@ -209,8 +222,6 @@ def predict_canvas():
         if not canvas_data:
             return jsonify({"error": "缺少画板数据"}), 400
 
-        width = canvas_data["width"]
-        height = canvas_data["height"]
         pixels = np.array(canvas_data["pixels"], dtype=np.uint8)
 
         # 提取 RGB 通道（忽略 Alpha）
