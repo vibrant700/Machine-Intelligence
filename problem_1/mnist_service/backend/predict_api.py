@@ -9,7 +9,6 @@ from io import BytesIO
 
 import cv2
 import numpy as np
-from feature_extractor import extract_features_batch
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from PIL import Image
@@ -20,7 +19,7 @@ CORS(app)  # 允许跨域请求
 print("Loading model...")
 import os
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "try_features1_model.pkl")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "pixel_model.pkl")
 try:
     with open(MODEL_PATH, "rb") as f:
         net = pickle.load(f)
@@ -152,8 +151,8 @@ def predict():
         if img.shape != (28, 28):
             img = cv2.resize(img, (28, 28))
 
-        # 提取特征
-        features = extract_features_batch(img[np.newaxis, ...])
+        # 展平为 784 维（像素模型）
+        features = img.reshape(1, 784).astype(np.float32)
 
         # 预测
         logits = net(features)
@@ -233,8 +232,8 @@ def predict_canvas():
         # 归一化
         img = resized.astype(np.float32) / 255.0
 
-        # 提取特征并预测
-        features = extract_features_batch(img[np.newaxis, ...])
+        # 展平为 784 维并预测
+        features = img.reshape(1, 784).astype(np.float32)
         logits = net(features)
 
         # 应用 Softmax
@@ -286,8 +285,8 @@ def predict_image():
         # 转换图片
         img = base64_to_image(image_data)
 
-        # 提取特征并预测
-        features = extract_features_batch(img[np.newaxis, ...])
+        # 展平为 784 维并预测
+        features = img.reshape(1, 784).astype(np.float32)
         logits = net(features)
 
         # 应用 Softmax
