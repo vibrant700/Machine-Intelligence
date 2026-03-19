@@ -34,7 +34,10 @@ except FileNotFoundError:
 CNN_PATH = os.path.join(os.path.dirname(__file__), "CNN.pkl")
 try:
     import torch
-    CNN = torch.load(CNN_PATH, map_location=torch.device('cpu'), weights_only=False)
+
+    CNN = torch.load(
+        CNN_PATH, map_location=torch.device("cpu"), weights_only=False
+    )
     CNN.eval()
     print("[OK] CNN loaded successfully")
 except FileNotFoundError:
@@ -124,7 +127,7 @@ def base64_to_image(base64_string):
 @app.route("/predict", methods=["POST"])
 def predict():
     """
-    主预测接口 - 兼容前端格式
+    预测接口
 
     接收格式:
     {
@@ -183,15 +186,18 @@ def predict():
             # CNN使用PyTorch，需要(channel, height, width)格式
             # 注意：训练时用的是 0-255 范围的数据，所以需要转换回来
             import torch
+
             img_cnn = (img * 255).astype(np.float32)  # 转换回 0-255
-            img_tensor = torch.tensor(img_cnn, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
-            print(f"[DEBUG CNN] Input shape: {img_tensor.shape}, min: {img_tensor.min():.3f}, max: {img_tensor.max():.3f}")
+            img_tensor = (
+                torch.tensor(img_cnn, dtype=torch.float32)
+                .unsqueeze(0)
+                .unsqueeze(0)
+            )
             with torch.no_grad():
                 logits = selected_model(img_tensor)
-            print(f"[DEBUG CNN] Logits: {logits}")
-            print(f"[DEBUG CNN] Logits shape: {logits.shape}")
-            probabilities = torch.softmax(logits, dim=1).squeeze(0).cpu().numpy()
-            print(f"[DEBUG CNN] Probabilities: {probabilities}")
+            probabilities = (
+                torch.softmax(logits, dim=1).squeeze(0).cpu().numpy()
+            )
         else:
             # MLP使用特征提取器
             img_uint8 = (img * 255).astype(np.uint8)
@@ -201,7 +207,7 @@ def predict():
 
             # 应用 Softmax 将 logits 转换为概率
             def softmax(x):
-                exp_x = np.exp(x - np.max(x))  # 数值稳定
+                exp_x = np.exp(x - np.max(x))
                 return exp_x / exp_x.sum()
 
             probabilities = softmax(logits[0])
@@ -217,134 +223,6 @@ def predict():
                 "distribution": probabilities.tolist(),  # 备用字段
                 "scores": probabilities.tolist(),  # 备用字段
                 "model_type": model_name,
-            }
-        )
-
-    except Exception as e:
-        import traceback
-
-        return (
-            jsonify({"error": str(e), "traceback": traceback.format_exc()}),
-            500,
-        )
-
-
-@app.route("/predict/canvas", methods=["POST"])
-def predict_canvas():
-    """
-    画板预测接口（备用）
-
-    接收格式:
-    {
-        "canvas": {
-            "width": 280,
-            "height": 280,
-            "pixels": [[255,255,255,255], ...]
-        }
-    }
-    """
-    try:
-        if net is None:
-            return jsonify({"error": "模型未加载"}), 500
-
-        data = request.json
-        canvas_data = data.get("canvas")
-
-        if not canvas_data:
-            return jsonify({"error": "缺少画板数据"}), 400
-
-        pixels = np.array(canvas_data["pixels"], dtype=np.uint8)
-
-        # 提取 RGB 通道（忽略 Alpha）
-        if len(pixels.shape) == 3 and pixels.shape[-1] == 4:
-            pixels = pixels[:, :, :3]
-
-        # 转换为灰度图
-        if len(pixels.shape) == 3:
-            gray = cv2.cvtColor(pixels, cv2.COLOR_RGB2GRAY)
-        else:
-            gray = pixels
-
-        # 反转颜色（黑底白字 -> 白底黑字）
-        gray = 255 - gray
-
-        # 调整大小为 28x28
-        resized = cv2.resize(gray, (28, 28), interpolation=cv2.INTER_AREA)
-
-        # 归一化
-        img = resized.astype(np.float32) / 255.0
-
-        # 展平为 784 维并预测
-        features = img.reshape(1, 784).astype(np.float32)
-        logits = net(features)
-
-        # 应用 Softmax
-        def softmax(x):
-            exp_x = np.exp(x - np.max(x))
-            return exp_x / exp_x.sum()
-
-        probabilities = softmax(logits[0])
-        predicted_label = int(np.argmax(probabilities))
-        confidence = float(probabilities[predicted_label])
-
-        return jsonify(
-            {
-                "prediction": predicted_label,
-                "confidence": confidence,
-                "probabilities": probabilities.tolist(),
-            }
-        )
-
-    except Exception as e:
-        import traceback
-
-        return (
-            jsonify({"error": str(e), "traceback": traceback.format_exc()}),
-            500,
-        )
-
-
-@app.route("/predict/image", methods=["POST"])
-def predict_image():
-    """
-    图片上传预测接口（备用）
-
-    接收格式:
-    {
-        "image": "data:image/png;base64,iVBORw0KGgoAAA..."
-    }
-    """
-    try:
-        if net is None:
-            return jsonify({"error": "模型未加载"}), 500
-
-        data = request.json
-        image_data = data.get("image")
-
-        if not image_data:
-            return jsonify({"error": "缺少图片数据"}), 400
-
-        # 转换图片
-        img = base64_to_image(image_data)
-
-        # 展平为 784 维并预测
-        features = img.reshape(1, 784).astype(np.float32)
-        logits = net(features)
-
-        # 应用 Softmax
-        def softmax(x):
-            exp_x = np.exp(x - np.max(x))
-            return exp_x / exp_x.sum()
-
-        probabilities = softmax(logits[0])
-        predicted_label = int(np.argmax(probabilities))
-        confidence = float(probabilities[predicted_label])
-
-        return jsonify(
-            {
-                "prediction": predicted_label,
-                "confidence": confidence,
-                "probabilities": probabilities.tolist(),
             }
         )
 
@@ -386,26 +264,11 @@ def index():
             "models": {
                 "MLP": "loaded" if MLP_1 else "not_loaded",
                 "CNN": "loaded" if CNN else "not_loaded",
-            }
+            },
         }
     )
 
 
 if __name__ == "__main__":
-    print("\n" + "=" * 70)
-    print("[START] MNIST 数字识别 API 服务启动")
-    print("=" * 70)
-    print("[ADDR] 地址: http://localhost:5000")
-    print("[ADDR] 本地: http://127.0.0.1:5000")
-    print("")
-    print("[INFO] 可用接口:")
-    print("   POST /predict         - 主预测接口（前端默认）")
-    print("   POST /predict/canvas  - 画板预测")
-    print("   POST /predict/image  - 图片上传预测")
-    print("   GET  /health          - 健康检查")
-    print("   GET  /                - API 信息")
-    print("=" * 70)
-    print("[WAIT] 等待前端连接...")
-    print("=" * 70 + "\n")
 
     app.run(host="0.0.0.0", port=5000, debug=True, threaded=True)
