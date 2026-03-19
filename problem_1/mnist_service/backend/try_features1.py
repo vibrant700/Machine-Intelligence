@@ -164,7 +164,7 @@ final_prediction = np.argmax(prediction, axis=1)
 support.compute_overall_metrics(test_labels, final_prediction)
 
 # 保存模型
-model_path = "working_dir\\Machine-Intelligence\\problem_1\\mnist_service\\backend\\try_features1_model.pkl"
+model_path = "working_dir\\Machine-Intelligence\\problem_1\\mnist_service\\backend\\MLP_1.pkl"
 with open(model_path, "wb") as f:
     pickle.dump(net, f)
 print(f"[OK] Model saved to: {model_path}")
