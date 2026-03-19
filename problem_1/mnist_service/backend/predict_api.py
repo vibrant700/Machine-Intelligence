@@ -35,7 +35,7 @@ try:
     with open(MLP_1_PATH, "rb") as f:
         CNN = pickle.load(f)
     CNN.eval()
-    print("[OK] MLP_1 loaded successfully")
+    print("[OK] CNN loaded successfully")
 except FileNotFoundError:
     print("[ERROR] Model file not found, please train model first")
     CNN = None
