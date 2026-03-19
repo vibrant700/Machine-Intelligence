@@ -27,18 +27,21 @@ try:
     MLP_1.eval()
     print("[OK] MLP_1 loaded successfully")
 except FileNotFoundError:
-    print("[ERROR] Model file not found, please train model first")
+    print("[ERROR] MLP_1 model file not found, please train model first")
     MLP_1 = None
+
 # 加载CNN模型
 CNN_PATH = os.path.join(os.path.dirname(__file__), "CNN.pkl")
 try:
-    with open(MLP_1_PATH, "rb") as f:
-        CNN = pickle.load(f)
+    import torch
+    CNN = torch.load(CNN_PATH, map_location=torch.device('cpu'), weights_only=False)
     CNN.eval()
     print("[OK] CNN loaded successfully")
 except FileNotFoundError:
-    print("[ERROR] Model file not found, please train model first")
+    print("[ERROR] CNN model file not found, please train model first")
     CNN = None
+
+# 默认使用MLP模型
 net = MLP_1
 
 
@@ -128,7 +131,8 @@ def predict():
         "image_base64": "data:image/png;base64,iVBORw0KGgoAAA...",
         "width": 28,
         "height": 28,
-        "normalized_pixels": [0.0, 0.1, ...]  // 可选
+        "normalized_pixels": [0.0, 0.1, ...],  // 可选
+        "model_type": "MLP"  // 可选，默认MLP，可选CNN
     }
 
     返回格式:
@@ -139,11 +143,22 @@ def predict():
     }
     """
     try:
-        if net is None:
-            return jsonify({"error": "模型未加载，请先训练模型"}), 500
-
         # 获取请求数据
         data = request.json
+
+        # 选择模型
+        model_type = data.get("model_type", "MLP").upper()
+
+        if model_type == "CNN":
+            if CNN is None:
+                return jsonify({"error": "CNN模型未加载，请先训练模型"}), 500
+            selected_model = CNN
+            model_name = "CNN"
+        else:  # 默认使用MLP
+            if MLP_1 is None:
+                return jsonify({"error": "MLP模型未加载，请先训练模型"}), 500
+            selected_model = MLP_1
+            model_name = "MLP"
 
         # 方法 1: 从 image_base64 提取
         if "image_base64" in data:
@@ -162,20 +177,35 @@ def predict():
         # 确保是 28x28
         if img.shape != (28, 28):
             img = cv2.resize(img, (28, 28))
-        # 进行数据预处理
-        img_uint8 = (img * 255).astype(np.uint8)
-        img_batch = img_uint8.reshape(1, 28, 28)
-        features = extract_features_batch(img_batch)
 
-        # 预测
-        logits = net(features)
+        # 根据模型类型进行不同的预处理
+        if model_type == "CNN":
+            # CNN使用PyTorch，需要(channel, height, width)格式
+            # 注意：训练时用的是 0-255 范围的数据，所以需要转换回来
+            import torch
+            img_cnn = (img * 255).astype(np.float32)  # 转换回 0-255
+            img_tensor = torch.tensor(img_cnn, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+            print(f"[DEBUG CNN] Input shape: {img_tensor.shape}, min: {img_tensor.min():.3f}, max: {img_tensor.max():.3f}")
+            with torch.no_grad():
+                logits = selected_model(img_tensor)
+            print(f"[DEBUG CNN] Logits: {logits}")
+            print(f"[DEBUG CNN] Logits shape: {logits.shape}")
+            probabilities = torch.softmax(logits, dim=1).squeeze(0).cpu().numpy()
+            print(f"[DEBUG CNN] Probabilities: {probabilities}")
+        else:
+            # MLP使用特征提取器
+            img_uint8 = (img * 255).astype(np.uint8)
+            img_batch = img_uint8.reshape(1, 28, 28)
+            features = extract_features_batch(img_batch)
+            logits = selected_model(features)
 
-        # 应用 Softmax 将 logits 转换为概率
-        def softmax(x):
-            exp_x = np.exp(x - np.max(x))  # 数值稳定
-            return exp_x / exp_x.sum()
+            # 应用 Softmax 将 logits 转换为概率
+            def softmax(x):
+                exp_x = np.exp(x - np.max(x))  # 数值稳定
+                return exp_x / exp_x.sum()
 
-        probabilities = softmax(logits[0])
+            probabilities = softmax(logits[0])
+
         predicted_label = int(np.argmax(probabilities))
         confidence = float(probabilities[predicted_label])
 
@@ -186,6 +216,7 @@ def predict():
                 "probabilities": probabilities.tolist(),
                 "distribution": probabilities.tolist(),  # 备用字段
                 "scores": probabilities.tolist(),  # 备用字段
+                "model_type": model_name,
             }
         )
 
@@ -332,7 +363,8 @@ def health():
     return jsonify(
         {
             "status": "ok",
-            "model_loaded": net is not None,
+            "mlp_loaded": MLP_1 is not None,
+            "cnn_loaded": CNN is not None,
             "message": "MNIST 预测 API 运行中",
         }
     )
@@ -346,12 +378,15 @@ def index():
             "service": "MNIST Digit Recognition API",
             "version": "1.0",
             "endpoints": {
-                "POST /predict": "主预测接口（兼容前端）",
+                "POST /predict": "主预测接口（兼容前端，支持MLP/CNN）",
                 "POST /predict/canvas": "画板预测",
                 "POST /predict/image": "图片上传预测",
                 "GET /health": "健康检查",
             },
-            "model_status": "loaded" if net else "not_loaded",
+            "models": {
+                "MLP": "loaded" if MLP_1 else "not_loaded",
+                "CNN": "loaded" if CNN else "not_loaded",
+            }
         }
     )
 

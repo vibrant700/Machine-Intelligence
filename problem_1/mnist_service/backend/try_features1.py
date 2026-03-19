@@ -56,15 +56,15 @@ import support
 from feature_extractor import extract_features_batch
 
 # 定义学习率
-lr = 1e-5  # Adam 通常使用较小的学习率
+lr = 0.01  # Adam 通常使用较小的学习率
 # 定义学习轮数
-epoch = 50
+epoch = 20
 # 定义batch_size
 batch_size = 64
 
 
 # 准备数据
-path = "working_dir\\Machine-Intelligence\\problem_1\\DATA\\MNIST"
+path = "..\\..\\DATA\\MNIST"
 train_images, train_label, test_images, test_labels = support.load_mnist(path)
 
 train_features = extract_features_batch(
@@ -164,7 +164,7 @@ final_prediction = np.argmax(prediction, axis=1)
 support.compute_overall_metrics(test_labels, final_prediction)
 
 # 保存模型
-model_path = "working_dir\\Machine-Intelligence\\problem_1\\mnist_service\\backend\\MLP_1.pkl"
+model_path = "MLP_1.pkl"
 with open(model_path, "wb") as f:
     pickle.dump(net, f)
 print(f"[OK] Model saved to: {model_path}")

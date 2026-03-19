@@ -1,18 +1,17 @@
-import pickle
-
 import support
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset, random_split
 
-# 指定设备为gpu
-device = torch.device("cuda")
+# 自动检测设备（有GPU用GPU，没有用CPU）
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 # 指定学习率
 lr = 5e-4
 # 指定训练轮数
 epoch = 200
 # 指定数据集路径
-path = "working_dir\\Machine-Intelligence\\problem_1\\DATA\\MNIST"
+path =  "..\\..\\DATA\\MNIST"
 # 读取数据集
 train_val_features, train_val_labels, test_features, test_labels = (
     support.load_mnist(path)
@@ -137,7 +136,6 @@ correct = (predict == test_labels).sum().item()
 total = len(test_features)
 accuracy = correct / total
 print(f"训练完成,在测试集上的正确率为{accuracy*100}%")
-model_path = "working_dir\\Machine-Intelligence\\problem_1\\mnist_service\\backend\\CNN.pkl"
-with open(model_path, "wb") as f:
-    pickle.dump(net, f)
+model_path = "CNN.pkl"
+torch.save(net, model_path)
 print(f"模型文件成功保存至:{model_path}")

@@ -3,6 +3,7 @@ const drawCtx = drawCanvas.getContext("2d");
 const brushSizeInput = document.getElementById("brushSize");
 const brushSizeValue = document.getElementById("brushSizeValue");
 const brushColorInput = document.getElementById("brushColor");
+const modelSelect = document.getElementById("modelSelect");
 const undoBtn = document.getElementById("undoBtn");
 const clearBtn = document.getElementById("clearBtn");
 const fileInput = document.getElementById("fileInput");
@@ -212,6 +213,7 @@ async function handlePredict() {
     width: 28,
     height: 28,
     normalized_pixels: preprocessResult.normalizedPixels,
+    model_type: modelSelect.value,
   };
 
   const responseCacheKey = `${sourceHash}:${endpoint}`;
