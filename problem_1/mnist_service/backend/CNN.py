@@ -3,6 +3,64 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset, random_split
 
+"""
+20轮
+0       973     15      7       9005    0.9848  0.9929  0.9888
+1       1132    19      3       8846    0.9835  0.9974  0.9904
+2       1028    8       4       8960    0.9923  0.9961  0.9942
+3       1004    10      6       8980    0.9901  0.9941  0.9921
+4       978     26      4       8992    0.9741  0.9959  0.9849
+5       885     12      7       9096    0.9866  0.9922  0.9894
+6       945     3       13      9039    0.9968  0.9864  0.9916
+7       1014    9       14      8963    0.9912  0.9864  0.9888
+8       965     6       9       9020    0.9938  0.9908  0.9923
+9       964     4       45      8987    0.9959  0.9554  0.9752
+
+宏平均 (Macro-Average):
+  精确率: 0.9889 (98.89%)
+  召回率: 0.9887 (98.87%)
+  F1分数: 0.9888
+
+微平均 (Micro-Average):
+  精确率: 0.9888 (98.88%)
+  召回率: 0.9888 (98.88%)
+  F1分数: 0.9888
+
+总体准确率: 0.9888 (98.88%)
+
+分析说明：
+  宏平均和微平均接近，说明各类别样本量相对均衡
+"""
+
+"""
+200轮
+0       978     7       2       9013    0.9929  0.9980  0.9954
+1       1134    6       1       8859    0.9947  0.9991  0.9969
+2       1028    4       4       8964    0.9961  0.9961  0.9961
+3       1006    8       4       8982    0.9921  0.9960  0.9941
+4       977     8       5       9010    0.9919  0.9949  0.9934
+5       885     7       7       9101    0.9922  0.9922  0.9922
+6       949     2       9       9040    0.9979  0.9906  0.9942
+7       1022    5       6       8967    0.9951  0.9942  0.9946
+8       971     2       3       9024    0.9979  0.9969  0.9974
+9       995     6       14      8985    0.9940  0.9861  0.9900
+
+宏平均 (Macro-Average):
+  精确率: 0.9945 (99.45%)
+  召回率: 0.9944 (99.44%)
+  F1分数: 0.9944
+
+微平均 (Micro-Average):
+  精确率: 0.9945 (99.45%)
+  召回率: 0.9945 (99.45%)
+  F1分数: 0.9945
+
+总体准确率: 0.9945 (99.45%)
+
+分析说明：
+  宏平均和微平均接近，说明各类别样本量相对均衡
+"""
+
 # 自动检测设备（有GPU用GPU，没有用CPU）
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
@@ -11,7 +69,7 @@ lr = 5e-4
 # 指定训练轮数
 epoch = 200
 # 指定数据集路径
-path =  "..\\..\\DATA\\MNIST"
+path = "..\\..\\DATA\\MNIST"
 # 读取数据集
 train_val_features, train_val_labels, test_features, test_labels = (
     support.load_mnist(path)
@@ -122,9 +180,9 @@ for i in range(epoch):
     accuracy = correct / total
     scheduler.step(accuracy)
     current_lr = scheduler.get_last_lr()[0]
-    print(f"""第{i+1}轮训练后
+    print(f"""第{i + 1}轮训练后
 平均损失为{average_loss}
-在验证集上的正确率为{accuracy*100}%
+在验证集上的正确率为{accuracy * 100}%
 当前学习率: {current_lr}""")
 # 在测试集上进行测试
 net.eval()
@@ -135,7 +193,9 @@ predict = predict.cpu()
 correct = (predict == test_labels).sum().item()
 total = len(test_features)
 accuracy = correct / total
-print(f"训练完成,在测试集上的正确率为{accuracy*100}%")
+
+support.compute_overall_metrics(test_labels.numpy(), predict.numpy())
+print(f"训练完成,在测试集上的正确率为{accuracy * 100}%")
 model_path = "CNN.pkl"
 torch.save(net, model_path)
 print(f"模型文件成功保存至:{model_path}")
