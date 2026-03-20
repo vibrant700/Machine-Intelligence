@@ -18,16 +18,16 @@ from PIL import Image
 app = Flask(__name__)
 CORS(app)  # 允许跨域请求
 
-print("Loading model...")
+print("正在载入模型")
 # 加载MLP模型
 MLP_1_PATH = os.path.join(os.path.dirname(__file__), "MLP_1.pkl")
 try:
     with open(MLP_1_PATH, "rb") as f:
         MLP_1 = pickle.load(f)
     MLP_1.eval()
-    print("[OK] MLP_1 loaded successfully")
+    print("MLP_1 模型加载成功")
 except FileNotFoundError:
-    print("[ERROR] MLP_1 model file not found, please train model first")
+    print("找不到MLP_1模型文件，请先训练模型并保存文件")
     MLP_1 = None
 
 # 加载CNN模型
@@ -39,9 +39,9 @@ try:
         CNN_PATH, map_location=torch.device("cpu"), weights_only=False
     )
     CNN.eval()
-    print("[OK] CNN loaded successfully")
+    print("CNN 模型加载成功")
 except FileNotFoundError:
-    print("[ERROR] CNN model file not found, please train model first")
+    print("找不到CNN模型文件，请先训练模型并保存文件")
     CNN = None
 
 # 默认使用MLP模型
@@ -154,12 +154,12 @@ def predict():
 
         if model_type == "CNN":
             if CNN is None:
-                return jsonify({"error": "CNN模型未加载，请先训练模型"}), 500
+                return jsonify({"CNN模型未加载，请先训练模型"}), 500
             selected_model = CNN
             model_name = "CNN"
         else:  # 默认使用MLP
             if MLP_1 is None:
-                return jsonify({"error": "MLP模型未加载，请先训练模型"}), 500
+                return jsonify({"MLP模型未加载，请先训练模型"}), 500
             selected_model = MLP_1
             model_name = "MLP"
 

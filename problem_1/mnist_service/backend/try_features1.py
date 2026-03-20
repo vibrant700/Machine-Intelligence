@@ -146,7 +146,7 @@ for training_times in range(epoch):
         # 对所有参数进行一次优化
         optimizer.step()
     average_loss = total_loss / num_batches
-    print(f"完成第{training_times+1}轮训练，平均损失为{average_loss}")
+    print(f"完成第{training_times + 1}轮训练，平均损失为{average_loss}")
     # 设置为预测模式
     if True:
         net.eval()
@@ -155,7 +155,7 @@ for training_times in range(epoch):
         correct = np.sum(final_prediction == test_labels)
         total_test_num = len(test_labels)
         accuracy = correct / total_test_num
-        print(f"第{training_times+1}次训练后，在测试集上,正确率为{accuracy}")
+        print(f"第{training_times + 1}次训练后，在测试集上,正确率为{accuracy}")
         # 显示并记录数据
 
 # 评估
