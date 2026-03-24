@@ -1,32 +1,31 @@
-'''
+"""
 指标	数值
 总轮数	20 轮
-初始损失	0.332476
-最终损失	0.084237
-最终准确率	96.72%
+初始损失	0.23186613935283373
+最终损失	0.03790758622684102
+最终准确率	97.83%
 
 lr	0.01
 epoch	20 epochs
 batch	64	每批处理 64 个样本
 激活函数	ReLU
-Dropout	0.4
+Dropout	0.15
 
 Linear(784, 256)
 Batchnorm(num_features=256)
 ReLU()
-Dropout(p=0.4)
+Dropout(p=0.15)
 Linear(256, 128)
 Batchnorm(num_features=128)
 ReLU()
-Dropout(p=0.4)
+Dropout(p=0.15)
 Linear(128, 10)
-'''
+"""
 
 import Base_Classes
 import classes
 import numpy as np
 import support
-from torch.utils.tensorboard import SummaryWriter
 
 # 定义学习率
 lr = 0.01  # Adam 通常使用较小的学习率
@@ -54,12 +53,12 @@ net = Base_Classes.Sequential(
         classes.Linear(784, 256, bias=True),
         classes.Batchnorm(num_features=256),  # BatchNorm: 归一化
         classes.ReLU(),  # ReLU: 激活
-        classes.Dropout(p=0.4),  # Dropout: 防止过拟合，丢弃50%神经元
+        classes.Dropout(p=0.15),  # Dropout: 防止过拟合，丢弃15%神经元
         # 第二层: 256 -> 128
         classes.Linear(256, 128, bias=True),
         classes.Batchnorm(num_features=128),  # BatchNorm: 归一化
         classes.ReLU(),  # ReLU: 激活
-        classes.Dropout(p=0.4),  # Dropout: 防止过拟合，丢弃50%神经元
+        classes.Dropout(p=0.15),  # Dropout: 防止过拟合，丢弃15%神经元
         # 输出层: 128 -> 10
         classes.Linear(128, 10, bias=True),
     ]
@@ -68,8 +67,6 @@ net = Base_Classes.Sequential(
 optimizer = classes.Adam(lr=lr, params=net.parameters())
 # 定义损失函数
 loss_function = classes.CrossEntropyLoss()
-# 定义总结写入器
-writer = SummaryWriter("log")
 
 # 训练
 num_samples = train_features.shape[0]
@@ -105,8 +102,7 @@ for training_times in range(epoch):
         # 对所有参数进行一次优化
         optimizer.step()
     average_loss = total_loss / num_batches
-    print(f"完成第{training_times+1}轮训练，平均损失为{average_loss}")
-    writer.add_scalar("average_loss", average_loss, training_times)
+    print(f"完成第{training_times + 1}轮训练，平均损失为{average_loss}")
     # 设置为预测模式
     if training_times % 5 == 0:
         net.eval()
@@ -115,8 +111,6 @@ for training_times in range(epoch):
         correct = np.sum(final_prediction == test_labels)
         total_test_num = len(test_labels)
         accuracy = correct / total_test_num
-        # 显示并记录数据
-        writer.add_scalar("accuracy", accuracy, training_times)
 
 # 评估
 prediction = net(test_features)
