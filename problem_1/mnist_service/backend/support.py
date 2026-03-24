@@ -138,7 +138,9 @@ def evaluate_per_class(y_true, y_pred, num_classes=10):
         f1_scores.append(f1)
         # print(f"{digit} {tp:<6} {fp:<6} {fn:<6} {tn:<6} ")
         # print(f"{precision:.4f} {recall:.4f} {f1:.4f}")
-        print(f"{digit}       {tp:<6}  {fp:<6}  {fn:<6}  {tn:<6}  {precision:.4f}  {recall:.4f}  {f1:.4f}")
+        print(
+            f"{digit}       {tp:<6}  {fp:<6}  {fn:<6}  {tn:<6}  {precision:.4f}  {recall:.4f}  {f1:.4f}"
+        )
     return precisions, recalls, f1_scores
 
 
@@ -179,16 +181,16 @@ def compute_overall_metrics(y_true, y_pred):
     accuracy = np.mean(y_true == y_pred)
     # 打印结果
     print("\n宏平均 (Macro-Average):")
-    print(f"  精确率: {macro_precision:.4f} ({macro_precision*100:.2f}%)")
-    print(f"  召回率: {macro_recall:.4f} ({macro_recall*100:.2f}%)")
+    print(f"  精确率: {macro_precision:.4f} ({macro_precision * 100:.2f}%)")
+    print(f"  召回率: {macro_recall:.4f} ({macro_recall * 100:.2f}%)")
     print(f"  F1分数: {macro_f1:.4f}")
 
     print("\n微平均 (Micro-Average):")
-    print(f"  精确率: {micro_precision:.4f} ({micro_precision*100:.2f}%)")
-    print(f"  召回率: {micro_recall:.4f} ({micro_recall*100:.2f}%)")
+    print(f"  精确率: {micro_precision:.4f} ({micro_precision * 100:.2f}%)")
+    print(f"  召回率: {micro_recall:.4f} ({micro_recall * 100:.2f}%)")
     print(f"  F1分数: {micro_f1:.4f}")
 
-    print(f"\n总体准确率: {accuracy:.4f} ({accuracy*100:.2f}%)")
+    print(f"\n总体准确率: {accuracy:.4f} ({accuracy * 100:.2f}%)")
     # 分析宏平均和微平均的差异
     print("\n分析说明：")
     if abs(macro_f1 - micro_f1) < 0.01:
