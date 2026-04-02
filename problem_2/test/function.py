@@ -1,3 +1,7 @@
+import math
+import random
+
+
 # 生成所有情况
 # 使用递归以生成0-n的全排列
 # 列表[0]代表0号位置上的元素,[1]代表1号位置上的元素
@@ -15,6 +19,14 @@ def generate_full_permutation(n):
     return result
 
 
+# 用于生成一个情况
+# 列表[0]代表0号位置上的元素,[1]代表1号位置上的元素
+def generate_one_permutation(n):
+    numbers = list(range(n * n))
+    random.shuffle(numbers)
+    return numbers
+
+
 # 计算逆序数(不考虑空格0)
 def calculate_inversion_number(f_input):
     result = 0
@@ -30,11 +42,19 @@ def calculate_inversion_number(f_input):
 
 
 # 基于逆序数判断是否可解
-# 对于3*3的情况,由于不管是竖直方向还是水平方向移动空格，逆序数的奇偶性都不会发生改变，因此可以这么做
-def determine_solvability(f_input, f_goal):
+# n是解决n*n问题需要参数，如求解8数码问题则需要传入n=3
+def determine_solvability(f_input, f_goal, n):
     input_inversion_number = calculate_inversion_number(f_input)
     goal_inversion_number = calculate_inversion_number(f_goal)
-    if input_inversion_number % 2 == goal_inversion_number % 2:
+    # evidence是用于判断是否可解的关键数值
+    evidence_1 = input_inversion_number % 2
+    evidence_2 = goal_inversion_number % 2
+    if n % 2 == 0:
+        row_1 = n - (f_input.index(0) // n)
+        row_2 = n - (f_goal.index(0) // n)
+        evidence_1 += row_1
+        evidence_2 += row_2
+    if (evidence_1 % 2) == (evidence_2 % 2):
         return True
     else:
         return False
@@ -42,16 +62,17 @@ def determine_solvability(f_input, f_goal):
 
 # 预计算哈密顿距离表
 # 返回值为一个2维数组,list[数字][数字位置编号] = 该数字对应的哈密顿距离
-def precalculate_hamilton_table(f_goal):
+# n是解决n*n问题需要参数，如求解8数码问题则需要传入n=3
+def precalculate_hamilton_table(f_goal, n):
     hamilton_table = []
-    for i in range(1, 9):
+    for i in range(1, pow(n, 2)):
         temp = f_goal.index(i)
-        goal_row_index = temp // 3
-        goal_col_index = temp % 3
+        goal_row_index = temp // n
+        goal_col_index = temp % n
         temp_list = []
-        for j in range(9):
-            current_row_index = j // 3
-            current_col_index = j % 3
+        for j in range(pow(n, 2)):
+            current_row_index = j // n
+            current_col_index = j % n
             temp_list.append(
                 abs(goal_row_index - current_row_index)
                 + abs(goal_col_index - current_col_index)
@@ -60,90 +81,119 @@ def precalculate_hamilton_table(f_goal):
     return hamilton_table
 
 
+# 计算表示 n*n 拼图所需每个数字的位数
+def get_bits_per_number(n):
+    return math.ceil(math.log2(n * n))
+
+
+# 计算n*n拼图的mask，避免每次在函数内计算
+def get_mask(bits_per_number):
+    return (1 << bits_per_number) - 1
+
+
 # 用于将列表转换为数字-位置2进制数
-def from_list_to_num2pos(f_list):
+def from_list_to_num2pos(f_list, bits_per_number):
     num2pos = 0
     for pos, num in enumerate(f_list):
-        num2pos |= pos << (4 * num)
+        num2pos |= pos << (bits_per_number * num)
     return num2pos
 
 
 # 用于将列表转换为位置-数字2进制数
-def from_list_to_pos2num(f_list):
+def from_list_to_pos2num(f_list, bits_per_number):
     pos2num = 0
     for pos, num in enumerate(f_list):
-        pos2num |= num << (4 * pos)
+        pos2num |= num << (bits_per_number * pos)
     return pos2num
 
 
-def from_pos2num_to_list(f_pos2num):
-    result = [0] * 9
-    for i in range(9):
-        num = get_digit(f_pos2num, i)
+def from_pos2num_to_list(f_pos2num, n, bits_per_number, mask):
+    size = pow(n, 2)
+    result = [0] * size
+    for i in range(size):
+        num = get_digit(f_pos2num, i, bits_per_number, mask)
         result[i] = num
     return result
 
 
 # 一些经过封装的二进制操作(目的是代码可读性)
 # 从位置-数字数中获取位置p的数字
-def get_digit(f_pos2num, p):
-    return (f_pos2num >> (4 * p)) & 0xF
+def get_digit(f_pos2num, position, bits_per_number, mask):
+    return (f_pos2num >> (bits_per_number * position)) & mask
 
 
 # 从数字-位置数中获取数字d的位置
-def get_pos(f_num2pos, d):
-    return (f_num2pos >> (4 * d)) & 0xF
+def get_pos(f_num2pos, digit, bits_per_number, mask):
+    return (f_num2pos >> (bits_per_number * digit)) & mask
 
 
 # 给定原数以及与0交换的位置编号，返回变化后的数
-# p0为0所在的位置的编号
-# p1为即将于p0交换的位置的编号
-def move(f_num2pos, f_pos2num, f_p0, f_p1):
-    MASK = 0xF  # 即0b1111
-    p1_num = get_digit(f_pos2num, f_p1)
+# f_position0为0所在的位置的编号
+# f_position1为即将于p0交换的位置的编号
+def move(f_num2pos, f_pos2num, f_position0, f_position1, bits_per_number, mask):
+    p1_num = get_digit(f_pos2num, f_position1, bits_per_number, mask)
 
     # 更新数字-位置数
     new_num2pos = f_num2pos
     # 将数字0对应的位置清空(在数字-位置数中，第1-4就对应着数字0)
-    new_num2pos &= ~MASK
+    new_num2pos &= ~mask
     # 将数字0对应的位置置为p1
-    new_num2pos |= f_p1
+    new_num2pos |= f_position1
     # 将p1_num对应的位置清空
-    new_num2pos &= ~(MASK << (4 * p1_num))
+    new_num2pos &= ~(mask << (bits_per_number * p1_num))
     # 将p1_num对应的位置置为p0
-    new_num2pos |= f_p0 << (4 * p1_num)
+    new_num2pos |= f_position0 << (bits_per_number * p1_num)
 
     # 更新位置-数字数
     new_pos2num = f_pos2num
     # 将p0对应的数字清空
-    new_pos2num &= ~(MASK << (4 * f_p0))
+    new_pos2num &= ~(mask << (bits_per_number * f_position0))
     # 将p0处的位置置为p1_num(即p1处的数字)
-    new_pos2num |= p1_num << (4 * f_p0)
+    new_pos2num |= p1_num << (bits_per_number * f_position0)
     # 将p1对应的数字变为0(即p0处的数字0)
-    new_pos2num &= ~(MASK << (4 * f_p1))
+    new_pos2num &= ~(mask << (bits_per_number * f_position1))
 
     # 返回结果
     return new_num2pos, new_pos2num
 
 
-# 一个节点(即一个状态)对象，应该记录其num2pos、pos2num、父节点、g、h、f
-class single_Node:
-    # 设置类属性，所有实例共享
-    # 使用前赋值即可
-    # 预计算的哈密顿距离表
+# 生成n*n拼图的移动表
+def generate_motion_table(n):
+    size = n * n
+    motion_table = []
+    for i in range(size):
+        row = i // n
+        col = i % n
+        temp = []
+        if col < n - 1:  # 可以右移
+            temp.append(1)
+        if col > 0:  # 可以左移
+            temp.append(-1)
+        if row < n - 1:  # 可以下移
+            temp.append(n)
+        if row > 0:  # 可以上移
+            temp.append(-n)
+        motion_table.append(tuple(temp))
+    return motion_table
+
+
+# 一个正向搜索节点(即一个状态)对象，应该记录其num2pos、pos2num、父节点、g、h、f
+class forward_Node:
+    # 类属性，所有实例共享
+    _n = None
+    _bits_per_number = None
+    _mask = None
+    _motion_table = None
     _hamilton_table = None
-    # 预计算(手动计算，无需每次运行时计算)的可行移动表
-    _motion_table = (
-        (1, 3),  # 位置0,可以右移、下移
-        (1, -1, 3),  # 位置1,可以右移、左移、下移
-        (-1, 3),  # 位置2,可以左移、下移
-        (1, 3, -3),  # 位置3,可以右移、下移、上移
-        (1, -1, 3, -3),  # 位置4,可以右移、左移、下移、上移
-        (-1, 3, -3),  # 位置5,可以左移、下移、上移
-        (1, -3),  # 位置6,可以右移、上移
-        (1, -1, -3),  # 位置7,可以右移、左移、上移
-        (-1, -3),  # 位置8,可以左移、上移
-    )
+
+    # 设置类属性，需要在创建第一个节点前调用
+    @classmethod
+    def set_puzzle_params(cls, n, hamilton_table):
+        cls._n = n
+        cls._bits_per_number = get_bits_per_number(n)
+        cls._mask = get_mask(cls._bits_per_number)
+        cls._motion_table = generate_motion_table(n)
+        cls._hamilton_table = hamilton_table
 
     # 初始化一个节点
     def __init__(self, f_num2pos, f_pos2num, f_parent, f_g=0, f_h=0):
@@ -154,19 +204,26 @@ class single_Node:
         self.h = f_h
         self.f = self.g + self.h
 
-    def generate_one_sub_node(self, f_p0, f_p1):
-        new_num2pos, new_pos2num = move(self.num2pos, self.pos2num, f_p0, f_p1)
+    def generate_one_sub_node(self, f_position0, f_position1):
+        new_num2pos, new_pos2num = move(
+            self.num2pos,
+            self.pos2num,
+            f_position0,
+            f_position1,
+            self._bits_per_number,
+            self._mask,
+        )
         new_parent = self
         new_g = self.g + 1
-        p1_num = get_digit(self.pos2num, f_p1)
+        p1_num = get_digit(self.pos2num, f_position1, self._bits_per_number, self._mask)
         new_h = (
             self.h
-            - self._hamilton_table[p1_num - 1][f_p1]
+            - self._hamilton_table[p1_num - 1][f_position1]
             # 减去该数字原先的哈密顿距离。索引-1的原因是哈密顿距离表中未存储0相关距离，0位置记录的是1
-            + self._hamilton_table[p1_num - 1][f_p0]
+            + self._hamilton_table[p1_num - 1][f_position0]
             # 加上给数值后来的哈密顿距离。索引-1的原因是哈密顿距离表中未存储0相关距离，0位置记录的是1
         )
-        new_node = single_Node(
+        new_node = forward_Node(
             f_num2pos=new_num2pos,
             f_pos2num=new_pos2num,
             f_parent=new_parent,
@@ -179,11 +236,9 @@ class single_Node:
     def generate_sub_nodes(self):
         result = []
         # 找到数字0所在的位置编号
-        index_0 = get_digit(self.num2pos, 0)
+        index_0 = get_pos(self.num2pos, 0, self._bits_per_number, self._mask)
         for motion in self._motion_table[index_0]:
-            result.append(
-                self.generate_one_sub_node(index_0, index_0 + motion)
-            )
+            result.append(self.generate_one_sub_node(index_0, index_0 + motion))
         return result
 
     # 更改父节点函数
@@ -199,13 +254,114 @@ class single_Node:
         return self.h < other.h
 
 
-def get_path(node: single_Node):
+# 一个反向搜索节点(即一个状态)对象，应该记录其num2pos、pos2num、父节点、g、h、f
+class backward_Node:
+    # 类属性，所有实例共享
+    _n = None
+    _bits_per_number = None
+    _mask = None
+    _motion_table = None
+    _hamilton_table = None
+
+    # 设置类属性，需要在创建第一个节点前调用
+    @classmethod
+    def set_puzzle_params(cls, n, hamilton_table):
+        cls._n = n
+        cls._bits_per_number = get_bits_per_number(n)
+        cls._mask = get_mask(cls._bits_per_number)
+        cls._motion_table = generate_motion_table(n)
+        cls._hamilton_table = hamilton_table
+
+    # 初始化一个节点
+    def __init__(self, f_num2pos, f_pos2num, f_parent, f_g=0, f_h=0):
+        self.num2pos = f_num2pos
+        self.pos2num = f_pos2num
+        self.parent = f_parent
+        self.g = f_g
+        self.h = f_h
+        self.f = self.g + self.h
+
+    def generate_one_sub_node(self, f_position0, f_position1):
+        new_num2pos, new_pos2num = move(
+            self.num2pos,
+            self.pos2num,
+            f_position0,
+            f_position1,
+            self._bits_per_number,
+            self._mask,
+        )
+        new_parent = self
+        new_g = self.g + 1
+        p1_num = get_digit(self.pos2num, f_position1, self._bits_per_number, self._mask)
+        new_h = (
+            self.h
+            - self._hamilton_table[p1_num - 1][f_position1]
+            # 减去该数字原先的哈密顿距离。索引-1的原因是哈密顿距离表中未存储0相关距离，0位置记录的是1
+            + self._hamilton_table[p1_num - 1][f_position0]
+            # 加上给数值后来的哈密顿距离。索引-1的原因是哈密顿距离表中未存储0相关距离，0位置记录的是1
+        )
+        new_node = backward_Node(
+            f_num2pos=new_num2pos,
+            f_pos2num=new_pos2num,
+            f_parent=new_parent,
+            f_g=new_g,
+            f_h=new_h,
+        )
+        return new_node
+
+    # 用于生成某一节点的所有子节点，返回子节点的列表
+    def generate_sub_nodes(self):
+        result = []
+        # 找到数字0所在的位置编号
+        index_0 = get_pos(self.num2pos, 0, self._bits_per_number, self._mask)
+        for motion in self._motion_table[index_0]:
+            result.append(self.generate_one_sub_node(index_0, index_0 + motion))
+        return result
+
+    # 更改父节点函数
+    def change_parent(self, parent):
+        self.parent = parent
+        self.g = parent.g + 1
+        self.f = self.g + self.h
+
+    # 用于排序
+    def __lt__(self, other):
+        if self.f != other.f:
+            return self.f < other.f
+        return self.h < other.h
+
+
+def get_path_forward(node: forward_Node):
     result = []
     # 添加自身(即终点)
-    result.append(from_pos2num_to_list(node.pos2num))
+    result.append(
+        from_pos2num_to_list(node.pos2num, node._n, node._bits_per_number, node._mask)
+    )
     while node.parent:
         # 添加至尾部以加快速度
-        result.append(from_pos2num_to_list(node.parent.pos2num))
+        result.append(
+            from_pos2num_to_list(
+                node.parent.pos2num, node._n, node._bits_per_number, node._mask
+            )
+        )
         node = node.parent
     # 逆序输出
     return result[::-1]
+
+
+def get_path_backward(node: backward_Node):
+    result = []
+    # 添加自身(即终点)
+    result.append(
+        from_pos2num_to_list(node.pos2num, node._n, node._bits_per_number, node._mask)
+    )
+    while node.parent:
+        # 添加至尾部以加快速度
+        result.append(
+            from_pos2num_to_list(
+                node.parent.pos2num, node._n, node._bits_per_number, node._mask
+            )
+        )
+        node = node.parent
+    # 正序输出
+    return result[1::1]
