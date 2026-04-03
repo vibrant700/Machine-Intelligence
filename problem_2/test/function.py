@@ -13,8 +13,15 @@ def generate_full_permutation(n):
             new_perm = item[:index] + [n] + item[index:]
             result.append(new_perm)
     return result
-
-
+''' 返回：包含 9! = 362,880 个列表的列表
+[
+    [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    [1, 0, 2, 3, 4, 5, 6, 7, 8],
+    [1, 2, 0, 3, 4, 5, 6, 7, 8],
+    ...
+    [8, 7, 6, 5, 4, 3, 2, 1, 0]
+]
+'''
 # 计算逆序数(不考虑空格0)
 def calculate_inversion_number(f_input):
     result = 0
@@ -27,7 +34,7 @@ def calculate_inversion_number(f_input):
             else:
                 pass
     return result
-
+#计算逆序对
 
 # 基于逆序数判断是否可解
 # 对于3*3的情况,由于不管是竖直方向还是水平方向移动空格，逆序数的奇偶性都不会发生改变，因此可以这么做
@@ -124,7 +131,7 @@ def move(f_num2pos, f_pos2num, f_p0, f_p1):
 
     # 返回结果
     return new_num2pos, new_pos2num
-
+#移动后更新数据表
 
 # 一个节点(即一个状态)对象，应该记录其num2pos、pos2num、父节点、g、h、f
 class single_Node:
