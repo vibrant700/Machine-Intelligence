@@ -81,6 +81,126 @@ def precalculate_hamilton_table(f_goal, n):
     return hamilton_table
 
 
+# 线性冲突相关函数 
+
+# 预计算线性冲突所需的辅助信息
+def precalculate_linear_conflict_info(f_goal, n):
+ 
+    """
+    返回:
+        goal_rows: list, goal_rows[num] = 数字num的目标行号
+        goal_cols: list, goal_cols[num] = 数字num的目标列号
+        row_conflict_pairs: set, 可能产生行冲突的数字对 (num1, num2)
+        col_conflict_pairs: set, 可能产生列冲突的数字对 (num1, num2)
+    """
+    size = n * n
+
+    # 1. 计算每个数字的目标行列
+    goal_rows = [0] * size
+    goal_cols = [0] * size
+    for num in range(1, size):
+        pos = f_goal.index(num)
+        goal_rows[num] = pos // n
+        goal_cols[num] = pos % n
+
+    # 2. 预计算可能产生行冲突的数字对
+    row_conflict_pairs = set()
+    for row in range(n):
+        # 找出目标在这一行的所有数字
+        nums_in_row = [num for num in range(1, size) if goal_rows[num] == row]
+        # 对于这些数字，如果它们的目标列不同，则可能产生冲突
+        for i in range(len(nums_in_row)):
+            for j in range(i + 1, len(nums_in_row)):
+                num1, num2 = nums_in_row[i], nums_in_row[j]
+                if goal_cols[num1] != goal_cols[num2]:
+                    row_conflict_pairs.add((num1, num2))
+                    row_conflict_pairs.add((num2, num1))
+
+    # 3. 预计算可能产生列冲突的数字对
+    col_conflict_pairs = set()
+    for col in range(n):
+        # 找出目标在这一列的所有数字
+        nums_in_col = [num for num in range(1, size) if goal_cols[num] == col]
+        # 对于这些数字，如果它们的目标行不同，则可能产生冲突
+        for i in range(len(nums_in_col)):
+            for j in range(i + 1, len(nums_in_col)):
+                num1, num2 = nums_in_col[i], nums_in_col[j]
+                if goal_rows[num1] != goal_rows[num2]:
+                    col_conflict_pairs.add((num1, num2))
+                    col_conflict_pairs.add((num2, num1))
+
+    return goal_rows, goal_cols, row_conflict_pairs, col_conflict_pairs
+
+
+# 计算线性冲突值
+def calculate_linear_conflict(pos2num, n, bits_per_number, mask,
+                              goal_rows, goal_cols,
+                              row_conflict_pairs, col_conflict_pairs):
+    """
+    计算当前状态的线性冲突惩罚值
+
+    参数:
+        pos2num: 位置-数字编码
+        n: 拼图大小
+        bits_per_number: 每个数字占用的位数
+        mask: 位掩码
+        goal_rows, goal_cols: 目标位置信息
+        row_conflict_pairs, col_conflict_pairs: 可能冲突的数字对
+
+    返回:
+        线性冲突惩罚值（每个冲突对+2）
+    """
+    conflict = 0
+
+    # 1. 检测行冲突
+    for row in range(n):
+        # 收集当前在这一行的所有数字（且目标也在这一行）
+        tiles_in_row = []
+        for col in range(n):
+            pos = row * n + col
+            num = get_digit(pos2num, pos, bits_per_number, mask)
+            if num != 0 and goal_rows[num] == row:
+                tiles_in_row.append((num, col))
+
+        # 检查这些数字对是否产生冲突
+        for i in range(len(tiles_in_row)):
+            for j in range(i + 1, len(tiles_in_row)):
+                num1, col1 = tiles_in_row[i]
+                num2, col2 = tiles_in_row[j]
+
+                # 只检查预计算出的可能冲突对
+                if (num1, num2) in row_conflict_pairs:
+                    # 目标位置相反，当前位置也相反
+                    if (goal_cols[num1] > goal_cols[num2] and col1 < col2) or \
+                       (goal_cols[num1] < goal_cols[num2] and col1 > col2):
+                        conflict += 2
+
+    # 2. 检测列冲突
+    for col in range(n):
+        # 收集当前在这一列的所有数字（且目标也在这一列）
+        tiles_in_col = []
+        for row in range(n):
+            pos = row * n + col
+            num = get_digit(pos2num, pos, bits_per_number, mask)
+            if num != 0 and goal_cols[num] == col:
+                tiles_in_col.append((num, row))
+
+        # 检查这些数字对是否产生冲突
+        for i in range(len(tiles_in_col)):
+            for j in range(i + 1, len(tiles_in_col)):
+                num1, row1 = tiles_in_col[i]
+                num2, row2 = tiles_in_col[j]
+
+                # 只检查预计算出的可能冲突对
+                if (num1, num2) in col_conflict_pairs:
+                    # 目标位置相反，当前位置也相反
+                    if (goal_rows[num1] > goal_rows[num2] and row1 < row2) or \
+                       (goal_rows[num1] < goal_rows[num2] and row1 > row2):
+                        conflict += 2
+
+    return conflict
+
+
 # 计算表示 n*n 拼图所需每个数字的位数
 def get_bits_per_number(n):
     return math.ceil(math.log2(n * n))
@@ -185,23 +305,41 @@ class forward_Node:
     _mask = None
     _motion_table = None
     _hamilton_table = None
+    # 线性冲突相关类属性
+    _goal_rows = None
+    _goal_cols = None
+    _row_conflict_pairs = None
+    _col_conflict_pairs = None
+    _use_linear_conflict = False  # 是否使用线性冲突
 
     # 设置类属性，需要在创建第一个节点前调用
     @classmethod
-    def set_puzzle_params(cls, n, hamilton_table):
+    def set_puzzle_params(cls, n, hamilton_table,
+                          goal_rows=None, goal_cols=None,
+                          row_conflict_pairs=None, col_conflict_pairs=None,
+                          use_linear_conflict=False):
         cls._n = n
         cls._bits_per_number = get_bits_per_number(n)
         cls._mask = get_mask(cls._bits_per_number)
         cls._motion_table = generate_motion_table(n)
         cls._hamilton_table = hamilton_table
 
+        # 线性冲突相关参数
+        cls._goal_rows = goal_rows
+        cls._goal_cols = goal_cols
+        cls._row_conflict_pairs = row_conflict_pairs if row_conflict_pairs else set()
+        cls._col_conflict_pairs = col_conflict_pairs if col_conflict_pairs else set()
+        cls._use_linear_conflict = use_linear_conflict
+
     # 初始化一个节点
-    def __init__(self, f_num2pos, f_pos2num, f_parent, f_g=0, f_h=0):
+    def __init__(self, f_num2pos, f_pos2num, f_parent, f_g=0, f_h=0, f_conflict=0):
         self.num2pos = f_num2pos
         self.pos2num = f_pos2num
         self.parent = f_parent
         self.g = f_g
-        self.h = f_h
+        self.h_manhattan = f_h  # 曼哈顿距离
+        self.conflict = f_conflict  # 线性冲突值
+        self.h = f_h + f_conflict  # 总启发式值
         self.f = self.g + self.h
 
     def generate_one_sub_node(self, f_position0, f_position1):
@@ -216,19 +354,32 @@ class forward_Node:
         new_parent = self
         new_g = self.g + 1
         p1_num = get_digit(self.pos2num, f_position1, self._bits_per_number, self._mask)
-        new_h = (
-            self.h
+
+        # 增量更新曼哈顿距离
+        new_h_manhattan = (
+            self.h_manhattan
             - self._hamilton_table[p1_num - 1][f_position1]
             # 减去该数字原先的哈密顿距离。索引-1的原因是哈密顿距离表中未存储0相关距离，0位置记录的是1
             + self._hamilton_table[p1_num - 1][f_position0]
             # 加上给数值后来的哈密顿距离。索引-1的原因是哈密顿距离表中未存储0相关距离，0位置记录的是1
         )
+
+        # 计算线性冲突（如果启用）
+        new_conflict = 0
+        if self._use_linear_conflict:
+            new_conflict = calculate_linear_conflict(
+                new_pos2num, self._n, self._bits_per_number, self._mask,
+                self._goal_rows, self._goal_cols,
+                self._row_conflict_pairs, self._col_conflict_pairs
+            )
+
         new_node = forward_Node(
             f_num2pos=new_num2pos,
             f_pos2num=new_pos2num,
             f_parent=new_parent,
             f_g=new_g,
-            f_h=new_h,
+            f_h=new_h_manhattan,
+            f_conflict=new_conflict,
         )
         return new_node
 
@@ -262,23 +413,41 @@ class backward_Node:
     _mask = None
     _motion_table = None
     _hamilton_table = None
+    # 线性冲突相关类属性
+    _goal_rows = None
+    _goal_cols = None
+    _row_conflict_pairs = None
+    _col_conflict_pairs = None
+    _use_linear_conflict = False  # 是否使用线性冲突
 
     # 设置类属性，需要在创建第一个节点前调用
     @classmethod
-    def set_puzzle_params(cls, n, hamilton_table):
+    def set_puzzle_params(cls, n, hamilton_table,
+                          goal_rows=None, goal_cols=None,
+                          row_conflict_pairs=None, col_conflict_pairs=None,
+                          use_linear_conflict=False):
         cls._n = n
         cls._bits_per_number = get_bits_per_number(n)
         cls._mask = get_mask(cls._bits_per_number)
         cls._motion_table = generate_motion_table(n)
         cls._hamilton_table = hamilton_table
 
+        # 线性冲突相关参数
+        cls._goal_rows = goal_rows
+        cls._goal_cols = goal_cols
+        cls._row_conflict_pairs = row_conflict_pairs if row_conflict_pairs else set()
+        cls._col_conflict_pairs = col_conflict_pairs if col_conflict_pairs else set()
+        cls._use_linear_conflict = use_linear_conflict
+
     # 初始化一个节点
-    def __init__(self, f_num2pos, f_pos2num, f_parent, f_g=0, f_h=0):
+    def __init__(self, f_num2pos, f_pos2num, f_parent, f_g=0, f_h=0, f_conflict=0):
         self.num2pos = f_num2pos
         self.pos2num = f_pos2num
         self.parent = f_parent
         self.g = f_g
-        self.h = f_h
+        self.h_manhattan = f_h  # 曼哈顿距离
+        self.conflict = f_conflict  # 线性冲突值
+        self.h = f_h + f_conflict  # 总启发式值
         self.f = self.g + self.h
 
     def generate_one_sub_node(self, f_position0, f_position1):
@@ -293,19 +462,32 @@ class backward_Node:
         new_parent = self
         new_g = self.g + 1
         p1_num = get_digit(self.pos2num, f_position1, self._bits_per_number, self._mask)
-        new_h = (
-            self.h
+
+        # 增量更新曼哈顿距离
+        new_h_manhattan = (
+            self.h_manhattan
             - self._hamilton_table[p1_num - 1][f_position1]
             # 减去该数字原先的哈密顿距离。索引-1的原因是哈密顿距离表中未存储0相关距离，0位置记录的是1
             + self._hamilton_table[p1_num - 1][f_position0]
             # 加上给数值后来的哈密顿距离。索引-1的原因是哈密顿距离表中未存储0相关距离，0位置记录的是1
         )
+
+        # 计算线性冲突（如果启用）
+        new_conflict = 0
+        if self._use_linear_conflict:
+            new_conflict = calculate_linear_conflict(
+                new_pos2num, self._n, self._bits_per_number, self._mask,
+                self._goal_rows, self._goal_cols,
+                self._row_conflict_pairs, self._col_conflict_pairs
+            )
+
         new_node = backward_Node(
             f_num2pos=new_num2pos,
             f_pos2num=new_pos2num,
             f_parent=new_parent,
             f_g=new_g,
-            f_h=new_h,
+            f_h=new_h_manhattan,
+            f_conflict=new_conflict,
         )
         return new_node
 
