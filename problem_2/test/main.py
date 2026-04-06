@@ -30,23 +30,37 @@ def solve_8_digital_problem(f_input, f_goal, f_n, use_linear_conflict=False):
         backward_row_pairs = backward_col_pairs = None
 
         if use_linear_conflict:
-            forward_goal_rows, forward_goal_cols, forward_row_pairs, forward_col_pairs = \
-                function.precalculate_linear_conflict_info(f_goal, f_n)
-            backward_goal_rows, backward_goal_cols, backward_row_pairs, backward_col_pairs = \
-                function.precalculate_linear_conflict_info(f_input, f_n)
+            (
+                forward_goal_rows,
+                forward_goal_cols,
+                forward_row_pairs,
+                forward_col_pairs,
+            ) = function.precalculate_linear_conflict_info(f_goal, f_n)
+            (
+                backward_goal_rows,
+                backward_goal_cols,
+                backward_row_pairs,
+                backward_col_pairs,
+            ) = function.precalculate_linear_conflict_info(f_input, f_n)
 
         # 调用类方法，定义类参数
         forward_Node.set_puzzle_params(
-            f_n, forward_hamilton_distance_table,
-            forward_goal_rows, forward_goal_cols,
-            forward_row_pairs, forward_col_pairs,
-            use_linear_conflict
+            f_n,
+            forward_hamilton_distance_table,
+            forward_goal_rows,
+            forward_goal_cols,
+            forward_row_pairs,
+            forward_col_pairs,
+            use_linear_conflict,
         )
         backward_Node.set_puzzle_params(
-            f_n, backward_hamilton_distance_table,
-            backward_goal_rows, backward_goal_cols,
-            backward_row_pairs, backward_col_pairs,
-            use_linear_conflict
+            f_n,
+            backward_hamilton_distance_table,
+            backward_goal_rows,
+            backward_goal_cols,
+            backward_row_pairs,
+            backward_col_pairs,
+            use_linear_conflict,
         )
 
         # 定义开放列表、关闭列表、状态-g字典
@@ -80,14 +94,24 @@ def solve_8_digital_problem(f_input, f_goal, f_n, use_linear_conflict=False):
         goal_conflict = 0
         if use_linear_conflict:
             init_conflict = function.calculate_linear_conflict(
-                init_pos2num, f_n, bits_per_number, mask,
-                forward_goal_rows, forward_goal_cols,
-                forward_row_pairs, forward_col_pairs
+                init_pos2num,
+                f_n,
+                bits_per_number,
+                mask,
+                forward_goal_rows,
+                forward_goal_cols,
+                forward_row_pairs,
+                forward_col_pairs,
             )
             goal_conflict = function.calculate_linear_conflict(
-                goal_pos2num, f_n, bits_per_number, mask,
-                backward_goal_rows, backward_goal_cols,
-                backward_row_pairs, backward_col_pairs
+                goal_pos2num,
+                f_n,
+                bits_per_number,
+                mask,
+                backward_goal_rows,
+                backward_goal_cols,
+                backward_row_pairs,
+                backward_col_pairs,
             )
 
         # 生成初始节点并添加至开放列表
@@ -173,8 +197,10 @@ def test(test_times, n, use_linear_conflict=False):
             print("使用纯曼哈顿距离启发式")
         start_time = time.perf_counter_ns()
         node_1, node_2 = solve_8_digital_problem(
-            f_input=input_state, f_goal=goal_state, f_n=n,
-            use_linear_conflict=use_linear_conflict
+            f_input=input_state,
+            f_goal=goal_state,
+            f_n=n,
+            use_linear_conflict=use_linear_conflict,
         )
         end_time = time.perf_counter_ns()
         used_time = end_time - start_time
@@ -182,7 +208,9 @@ def test(test_times, n, use_linear_conflict=False):
         if node_1 and node_2:
             path_forward = function.get_path_forward(node_1)
             path_backward = function.get_path_backward(node_2)
-            print(f"正向步数: {len(path_forward) - 1}, 反向步数: {len(path_backward) - 1}")
+            print(
+                f"正向步数: {len(path_forward) - 1}, 反向步数: {len(path_backward) - 1}"
+            )
             print(f"总步数: {len(path_forward) + len(path_backward) - 2}")
         else:
             print("未找到解")
@@ -191,64 +219,50 @@ def test(test_times, n, use_linear_conflict=False):
 
 
 # 对比测试：纯曼哈顿距离 vs 线性冲突
-if __name__ == "__main__":
+def compare_two_method(times, size):
+    for i in range(times):
+        # 测试用例
+        test_input = function.generate_one_permutation(size)
+        test_goal = function.generate_one_permutation(size)
+
+        print(f"\n初始状态: {test_input}")
+        print(f"目标状态: {test_goal}")
+        print()
+
+        print("曼哈顿距离")
+        start = time.perf_counter_ns()
+        node_1, node_2 = solve_8_digital_problem(
+            f_input=test_input, f_goal=test_goal, f_n=size, use_linear_conflict=False
+        )
+        end = time.perf_counter_ns()
+        if node_1 and node_2:
+            path_f = function.get_path_forward(node_1)
+            path_b = function.get_path_backward(node_2)
+            print(" 找到解")
+            print(f"  正向步数: {len(path_f) - 1}")
+            print(f"  反向步数: {len(path_b) - 1}")
+            print(f"  总步数: {len(path_f) + len(path_b) - 2}")
+            print(f"  用时: {(end - start) / 1e6:.2f}ms")
+        else:
+            print("✗ 未找到解")
+        print()
+
+        print("线性冲突增强")
+        start = time.perf_counter_ns()
+        node_1, node_2 = solve_8_digital_problem(
+            f_input=test_input, f_goal=test_goal, f_n=size, use_linear_conflict=True
+        )
+        end = time.perf_counter_ns()
+        if node_1 and node_2:
+            path_f = function.get_path_forward(node_1)
+            path_b = function.get_path_backward(node_2)
+            print(" 找到解")
+            print(f"  正向步数: {len(path_f) - 1}")
+            print(f"  反向步数: {len(path_b) - 1}")
+            print(f"  总步数: {len(path_f) + len(path_b) - 2}")
+            print(f"  用时: {(end - start) / 1e6:.2f}ms")
+        else:
+            print("✗ 未找到解")
 
 
-    # 测试用例
-    test_input = [8, 6, 7, 2, 5, 4, 3, 0, 1]
-    test_goal = [1, 2, 3, 4, 5, 6, 7, 8, 0]
-
-    print(f"\n初始状态: {test_input}")
-    print(f"目标状态: {test_goal}")
-    print()
-
-    # 测试1：纯曼哈顿距离
-
-    print("测试1: 纯曼哈顿距离")
-
-    start = time.perf_counter_ns()
-    node_1, node_2 = solve_8_digital_problem(
-        f_input=test_input,
-        f_goal=test_goal,
-        f_n=3,
-        use_linear_conflict=False
-    )
-    end = time.perf_counter_ns()
-    if node_1 and node_2:
-        path_f = function.get_path_forward(node_1)
-        path_b = function.get_path_backward(node_2)
-        print(f" 找到解")
-        print(f"  正向步数: {len(path_f) - 1}")
-        print(f"  反向步数: {len(path_b) - 1}")
-        print(f"  总步数: {len(path_f) + len(path_b) - 2}")
-        print(f"  用时: {(end - start) / 1e6:.2f}ms")
-    else:
-        print("✗ 未找到解")
-
-    print()
-
-    # 测试2：线性冲突
-
-    print("测试2: 线性冲突增强")
-
-    start = time.perf_counter_ns()
-    node_1, node_2 = solve_8_digital_problem(
-        f_input=test_input,
-        f_goal=test_goal,
-        f_n=3,
-        use_linear_conflict=True
-    )
-    end = time.perf_counter_ns()
-    if node_1 and node_2:
-        path_f = function.get_path_forward(node_1)
-        path_b = function.get_path_backward(node_2)
-        print(f" 找到解")
-        print(f"  正向步数: {len(path_f) - 1}")
-        print(f"  反向步数: {len(path_b) - 1}")
-        print(f"  总步数: {len(path_f) + len(path_b) - 2}")
-        print(f"  用时: {(end - start) / 1e6:.2f}ms")
-    else:
-        print("✗ 未找到解")
-
-
-
+compare_two_method(10, 4)

@@ -81,11 +81,11 @@ def precalculate_hamilton_table(f_goal, n):
     return hamilton_table
 
 
-# 线性冲突相关函数 
+# 线性冲突相关函数
+
 
 # 预计算线性冲突所需的辅助信息
 def precalculate_linear_conflict_info(f_goal, n):
- 
     """
     返回:
         goal_rows: list, goal_rows[num] = 数字num的目标行号
@@ -133,9 +133,16 @@ def precalculate_linear_conflict_info(f_goal, n):
 
 
 # 计算线性冲突值
-def calculate_linear_conflict(pos2num, n, bits_per_number, mask,
-                              goal_rows, goal_cols,
-                              row_conflict_pairs, col_conflict_pairs):
+def calculate_linear_conflict(
+    pos2num,
+    n,
+    bits_per_number,
+    mask,
+    goal_rows,
+    goal_cols,
+    row_conflict_pairs,
+    col_conflict_pairs,
+):
     """
     计算当前状态的线性冲突惩罚值
 
@@ -171,8 +178,9 @@ def calculate_linear_conflict(pos2num, n, bits_per_number, mask,
                 # 只检查预计算出的可能冲突对
                 if (num1, num2) in row_conflict_pairs:
                     # 目标位置相反，当前位置也相反
-                    if (goal_cols[num1] > goal_cols[num2] and col1 < col2) or \
-                       (goal_cols[num1] < goal_cols[num2] and col1 > col2):
+                    if (goal_cols[num1] > goal_cols[num2] and col1 < col2) or (
+                        goal_cols[num1] < goal_cols[num2] and col1 > col2
+                    ):
                         conflict += 2
 
     # 2. 检测列冲突
@@ -194,8 +202,9 @@ def calculate_linear_conflict(pos2num, n, bits_per_number, mask,
                 # 只检查预计算出的可能冲突对
                 if (num1, num2) in col_conflict_pairs:
                     # 目标位置相反，当前位置也相反
-                    if (goal_rows[num1] > goal_rows[num2] and row1 < row2) or \
-                       (goal_rows[num1] < goal_rows[num2] and row1 > row2):
+                    if (goal_rows[num1] > goal_rows[num2] and row1 < row2) or (
+                        goal_rows[num1] < goal_rows[num2] and row1 > row2
+                    ):
                         conflict += 2
 
     return conflict
@@ -314,10 +323,16 @@ class forward_Node:
 
     # 设置类属性，需要在创建第一个节点前调用
     @classmethod
-    def set_puzzle_params(cls, n, hamilton_table,
-                          goal_rows=None, goal_cols=None,
-                          row_conflict_pairs=None, col_conflict_pairs=None,
-                          use_linear_conflict=False):
+    def set_puzzle_params(
+        cls,
+        n,
+        hamilton_table,
+        goal_rows=None,
+        goal_cols=None,
+        row_conflict_pairs=None,
+        col_conflict_pairs=None,
+        use_linear_conflict=False,
+    ):
         cls._n = n
         cls._bits_per_number = get_bits_per_number(n)
         cls._mask = get_mask(cls._bits_per_number)
@@ -368,9 +383,14 @@ class forward_Node:
         new_conflict = 0
         if self._use_linear_conflict:
             new_conflict = calculate_linear_conflict(
-                new_pos2num, self._n, self._bits_per_number, self._mask,
-                self._goal_rows, self._goal_cols,
-                self._row_conflict_pairs, self._col_conflict_pairs
+                new_pos2num,
+                self._n,
+                self._bits_per_number,
+                self._mask,
+                self._goal_rows,
+                self._goal_cols,
+                self._row_conflict_pairs,
+                self._col_conflict_pairs,
             )
 
         new_node = forward_Node(
@@ -422,10 +442,16 @@ class backward_Node:
 
     # 设置类属性，需要在创建第一个节点前调用
     @classmethod
-    def set_puzzle_params(cls, n, hamilton_table,
-                          goal_rows=None, goal_cols=None,
-                          row_conflict_pairs=None, col_conflict_pairs=None,
-                          use_linear_conflict=False):
+    def set_puzzle_params(
+        cls,
+        n,
+        hamilton_table,
+        goal_rows=None,
+        goal_cols=None,
+        row_conflict_pairs=None,
+        col_conflict_pairs=None,
+        use_linear_conflict=False,
+    ):
         cls._n = n
         cls._bits_per_number = get_bits_per_number(n)
         cls._mask = get_mask(cls._bits_per_number)
@@ -476,9 +502,14 @@ class backward_Node:
         new_conflict = 0
         if self._use_linear_conflict:
             new_conflict = calculate_linear_conflict(
-                new_pos2num, self._n, self._bits_per_number, self._mask,
-                self._goal_rows, self._goal_cols,
-                self._row_conflict_pairs, self._col_conflict_pairs
+                new_pos2num,
+                self._n,
+                self._bits_per_number,
+                self._mask,
+                self._goal_rows,
+                self._goal_cols,
+                self._row_conflict_pairs,
+                self._col_conflict_pairs,
             )
 
         new_node = backward_Node(
