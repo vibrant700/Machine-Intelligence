@@ -13,3 +13,5 @@ log/
 events.out.tfevents.*
 
 .idea
+
+.claude/
