@@ -244,7 +244,7 @@ def compare_two_method(times, size):
             print(f"  总步数: {len(path_f) + len(path_b) - 2}")
             print(f"  用时: {(end - start) / 1e6:.2f}ms")
         else:
-            print("✗ 未找到解")
+            print(" 未找到解")
         print()
 
         print("线性冲突增强")
@@ -262,7 +262,8 @@ def compare_two_method(times, size):
             print(f"  总步数: {len(path_f) + len(path_b) - 2}")
             print(f"  用时: {(end - start) / 1e6:.2f}ms")
         else:
-            print("✗ 未找到解")
+            print(" 未找到解")
 
 
-compare_two_method(10, 4)
+if __name__ == "__main__":
+    compare_two_method(4, 4)

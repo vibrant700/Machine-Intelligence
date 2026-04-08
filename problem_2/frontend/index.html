@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>8 数码问题演示</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=ZCOOL+KuaiLe&display=block" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css?v=7">
+</head>
+<body>
+  <main class="page">
+    <header class="hero neo-card">
+      <h1 class="title">8-PUZZLE SOLVER</h1>
+      <p class="subtitle">可编辑状态输入 · 拖动数字快移 · 步骤播放</p>
+    </header>
+
+    <section class="controls neo-card">
+      <div class="row">
+        <label for="sizeSelect" class="label">网格规模</label>
+        <select id="sizeSelect" class="neo-input">
+          <option value="3">3 × 3</option>
+          <option value="4">4 × 4</option>
+        </select>
+        <button id="randomBothBtn" class="neo-btn secondary" type="button">一键随机（初始+目标）</button>
+      </div>
+      <div class="row" id="algorithmRow" style="display: none;">
+        <label for="algorithmSelect" class="label">求解算法</label>
+        <select id="algorithmSelect" class="neo-input">
+          <option value="linear_conflict">双端搜索 + 线性冲突</option>
+          <option value="pattern_db">双端搜索 + 模式数据库</option>
+        </select>
+      </div>
+      <div id="globalValidation" class="status"></div>
+      <div id="solveHint" class="status"></div>
+    </section>
+
+    <section class="boards-wrap">
+      <article class="neo-card board-card">
+        <div class="board-header">
+          <h2>初始状态</h2>
+          <div class="board-actions">
+            <button id="randomStartBtn" class="neo-btn secondary" type="button">随机初始</button>
+          </div>
+        </div>
+        <p class="tip">支持键盘输入。任意数字都可直接拖动，与目标格快速互换。</p>
+        <div id="startBoard" class="board"></div>
+      </article>
+
+      <article class="neo-card board-card">
+        <div class="board-header">
+          <h2>目标状态</h2>
+          <div class="board-actions">
+            <button id="randomGoalBtn" class="neo-btn secondary" type="button">随机目标</button>
+          </div>
+        </div>
+        <p class="tip" id="goalTip">请正确输入数字不重复、空格用 0 表示。</p>
+        <div id="goalBoard" class="board"></div>
+      </article>
+    </section>
+
+    <section class="solver neo-card">
+      <div class="row">
+        <button id="solveBtn" class="neo-btn accent" type="button">开始求解</button>
+        
+      </div>
+      <div id="solveStatus" class="status"></div>
+    </section>
+
+    <section id="playbackSection" class="neo-card playback hidden" aria-live="polite">
+      <div class="playback-head">
+        <h2>步骤播放</h2>
+        <div id="stepSummary" class="summary"></div>
+      </div>
+      <div id="playbackBoard" class="board playback-board"></div>
+      <div id="moveInfo" class="status"></div>
+      <div class="player-controls">
+        <button id="prevBtn" class="neo-btn" type="button">上一步 ←</button>
+        <button id="playPauseBtn" class="neo-btn accent" type="button">播放</button>
+        <button id="nextBtn" class="neo-btn" type="button">下一步 →</button>
+      </div>
+      <input id="stepRange" class="step-range" type="range" min="0" max="0" value="0">
+      <p class="tip">快捷键：空格 播放/暂停，← 上一步，→ 下一步</p>
+    </section>
+  </main>
+  <script src="./app.js?v=7"></script>
+</body>
+</html>
