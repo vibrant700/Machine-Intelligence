@@ -71,12 +71,8 @@ def solve_puzzle():
 
             if len(pattern_dbs) == 3:
                 try:
-                    print(f"[DEBUG] 开始求解: start={start}, goal={goal}, size={size}")
                     forward_path, backward_path = main2.solve_with_custom_goal(
                         start, goal, size, pattern_dbs
-                    )
-                    print(
-                        f"[DEBUG] 求解完成: forward_path长度={len(forward_path) if forward_path else 0}, backward_path长度={len(backward_path) if backward_path else 0}"
                     )
 
                     if forward_path is None or backward_path is None:
