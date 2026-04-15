@@ -1,8 +1,9 @@
 import heapq
-import time
 import pickle
-import function2
-from function2 import backward_Node, forward_Node
+import time
+
+from . import function2
+from .function2 import backward_Node, forward_Node
 
 
 def solve_8_digital_problem(f_input, f_goal, f_n, pattern_db_file):
@@ -21,7 +22,9 @@ def solve_8_digital_problem(f_input, f_goal, f_n, pattern_db_file):
             f_input, f_n
         )
         # 调用类方法，定义类参数
-        forward_Node.set_puzzle_params(f_n, forward_hamilton_distance_table,pattern_db_file)
+        forward_Node.set_puzzle_params(
+            f_n, forward_hamilton_distance_table, pattern_db_file
+        )
         backward_Node.set_puzzle_params(f_n, backward_hamilton_distance_table)
 
         # 定义开放列表、关闭列表、状态-g字典
@@ -143,7 +146,9 @@ def solve_with_custom_goal(f_input, f_goal, f_n, pattern_db_file):
         return None, None
 
     # 直接使用原求解函数
-    node_1, node_2 = solve_8_digital_problem(f_input, f_goal, f_n, pattern_db_file=pattern_db_file)
+    node_1, node_2 = solve_8_digital_problem(
+        f_input, f_goal, f_n, pattern_db_file=pattern_db_file
+    )
     if node_1 is None or node_2 is None:
         return None, None
 
@@ -158,7 +163,7 @@ def test(test_times, n, pattern_db_files=None):
     total_time = 0
     pattern_dbs = []
     for tiles, filepath in pattern_db_files:
-        with open(filepath, 'rb') as f:
+        with open(filepath, "rb") as f:
             db = pickle.load(f)
             pattern_dbs.append((tiles, db))
     print(f"Loaded {len(pattern_dbs)} pattern databases")
@@ -166,11 +171,16 @@ def test(test_times, n, pattern_db_files=None):
     for i in range(test_times):
         input_state = function2.generate_one_permutation(n)
         goal_state = function2.generate_one_permutation(n)
-        print(f"input_state:{input_state},goal_state:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0]")
+        print(
+            f"input_state:{input_state},goal_state:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0]"
+        )
         start_time = time.perf_counter_ns()
         node_1, node_2 = solve_8_digital_problem(
-            f_input=input_state, f_goal=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0], f_n=n,
-        pattern_db_file = pattern_dbs)
+            f_input=input_state,
+            f_goal=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0],
+            f_n=n,
+            pattern_db_file=pattern_dbs,
+        )
         end_time = time.perf_counter_ns()
         used_time = end_time - start_time
         total_time += used_time
@@ -180,10 +190,12 @@ def test(test_times, n, pattern_db_files=None):
     average_time = total_time / test_times
     print(f"平均用时:{average_time / 1e6}ms")
 
+
 pattern_files = [
-        ([1,2,3,4,5], r"D:\machine-intelligence\problem_2\test\pattern_db_1_5.pkl"),
-        ([6,7,8,9,10], r"D:\machine-intelligence\problem_2\test\pattern_db_6_10.pkl"),
-        ([11,12,13,14,15], r"D:\machine-intelligence\problem_2\test\pattern_db_11_15.pkl")
-    ]
-
-
+    ([1, 2, 3, 4, 5], r"D:\machine-intelligence\problem_2\test\pattern_db_1_5.pkl"),
+    ([6, 7, 8, 9, 10], r"D:\machine-intelligence\problem_2\test\pattern_db_6_10.pkl"),
+    (
+        [11, 12, 13, 14, 15],
+        r"D:\machine-intelligence\problem_2\test\pattern_db_11_15.pkl",
+    ),
+]

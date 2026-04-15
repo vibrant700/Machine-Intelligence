@@ -1,8 +1,8 @@
 import heapq
 import time
 
-import function
-from function import backward_Node, forward_Node
+from . import function
+from .function import backward_Node, forward_Node
 
 
 def solve_8_digital_problem(f_input, f_goal, f_n, use_linear_conflict=False):

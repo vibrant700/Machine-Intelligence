@@ -10,14 +10,13 @@ from pathlib import Path
 current_file = Path(__file__).resolve()
 current_dir = current_file.parent
 parent_dir = current_dir.parent
-test_dir = parent_dir / "test"
-sys.path.insert(0, str(test_dir))
+src_dir = parent_dir / "src"
+sys.path.insert(0, str(src_dir))
 
-import function
-import main
-import main2
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from Linear import function, main
+from Pattern import main2
 
 app = Flask(__name__)
 CORS(app)
@@ -57,9 +56,9 @@ def solve_puzzle():
         if algorithm == "pattern_db" and size == 4:
 
             pattern_files = [
-                ([1, 2, 3, 4, 5], str(test_dir / "pattern_db_1_5.pkl")),
-                ([6, 7, 8, 9, 10], str(test_dir / "pattern_db_6_10.pkl")),
-                ([11, 12, 13, 14, 15], str(test_dir / "pattern_db_11_15.pkl")),
+                ([1, 2, 3, 4, 5], str(src_dir / "Pattern\\pattern_db_1_5.pkl")),
+                ([6, 7, 8, 9, 10], str(src_dir / "Pattern\\pattern_db_6_10.pkl")),
+                ([11, 12, 13, 14, 15], str(src_dir / "Pattern\\pattern_db_11_15.pkl")),
             ]
 
             pattern_dbs = []
