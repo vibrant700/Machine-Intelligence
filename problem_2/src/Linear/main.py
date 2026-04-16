@@ -242,7 +242,7 @@ def solve_8_digital_problem(f_input, f_goal, f_n, use_linear_conflict=False):
             # 终止条件：比较两个开放列表当前最小有效f值之和与mu
             min_f_1 = peek_min_valid_f(open_heap_1, g_values_1)
             min_f_2 = peek_min_valid_f(open_heap_2, g_values_2)
-            if min_f_1 + min_f_2 >= mu:
+            if min(min_f_1, min_f_2) >= mu:
                 return forward, backward
 
 
