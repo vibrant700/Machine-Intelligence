@@ -5,6 +5,31 @@ from . import function
 from .function import backward_Node, forward_Node
 
 
+# 清理堆顶过期节点，直到堆顶为当前最优版本或堆为空
+def clean_invalid_top(heap, g_values):
+    while heap:
+        node = heap[0]
+        if g_values.get(node.num2pos) == node.g:
+            return
+        heapq.heappop(heap)
+
+
+# 返回开放列表中最小有效f值
+def peek_min_valid_f(heap, g_values):
+    clean_invalid_top(heap, g_values)
+    if heap:
+        return heap[0].f
+    return float("inf")
+
+
+# 弹出并返回一个有效节点，若无有效节点则返回None
+def pop_valid_node(heap, g_values):
+    clean_invalid_top(heap, g_values)
+    if heap:
+        return heapq.heappop(heap)
+    return None
+
+
 def solve_8_digital_problem(f_input, f_goal, f_n, use_linear_conflict=False):
     if function.determine_solvability(f_input, f_goal, f_n) is False:
         print("无解")
@@ -67,10 +92,17 @@ def solve_8_digital_problem(f_input, f_goal, f_n, use_linear_conflict=False):
         open_heap_1 = []
         close_set_1 = set()  # 储存num2pos
         g_values_1 = {}  # 用于记录num2pos-g(min)
+        best_node_1 = {}  # 用于记录num2pos-node
 
         open_heap_2 = []
         close_set_2 = set()  # 储存num2pos
         g_values_2 = {}  # 用于记录num2pos-g(min)
+        best_node_2 = {}  # 用于记录num2pos-node
+
+        # 定义mu,结果节点
+        mu = float("inf")
+        forward = None
+        backward = None
 
         # 将列表转化为二进制数
         init_num2pos = function.from_list_to_num2pos(f_input, bits_per_number)
@@ -134,31 +166,49 @@ def solve_8_digital_problem(f_input, f_goal, f_n, use_linear_conflict=False):
         heapq.heappush(open_heap_1, init_node)
         heapq.heappush(open_heap_2, goal_node)
         g_values_1[init_num2pos] = 0
+        best_node_1[init_num2pos] = init_node
         g_values_2[goal_num2pos] = 0
+        best_node_2[goal_num2pos] = goal_node
         # 开始循环
         while True:
+
             # 从开放列表中弹出f最小者，作为工作节点
-            working_node_1 = heapq.heappop(open_heap_1)
-            working_node_2 = heapq.heappop(open_heap_2)
+            working_node_1 = pop_valid_node(open_heap_1, g_values_1)
+            working_node_2 = pop_valid_node(open_heap_2, g_values_2)
+            # 如果有无法获得有效的工作节点了，则直接返回已有的forward和backward
+            if working_node_1 is None or working_node_2 is None:
+                return forward, backward
+
+            # 至此成功获得工作节点，可以开始工作
+
             if working_node_1.num2pos == working_node_2.num2pos:
-                return working_node_1, working_node_2
+                if working_node_1.g + working_node_2.g < mu:
+                    mu = working_node_1.g + working_node_2.g
+                    forward = working_node_1
+                    backward = working_node_2
+
             close_set_1.add(working_node_1.num2pos)
             close_set_2.add(working_node_2.num2pos)
             # 遍历工作节点1的所有子节点
             for item in working_node_1.generate_sub_nodes():
                 # 子节点在对方关闭列表中
                 if item.num2pos in close_set_2:
-                    for node in open_heap_2:
-                        if node.num2pos == item.num2pos:
-                            return item, node
+                    node = best_node_2[item.num2pos]
+                    if node.g + item.g < mu:
+                        mu = node.g + item.g
+                        forward = item
+                        backward = node
                 # 子节点在对方的g_values中
                 if item.num2pos in g_values_2:
-                    for node in open_heap_2:
-                        if node.num2pos == item.num2pos:
-                            return item, node
+                    node = best_node_2[item.num2pos]
+                    if node.g + item.g < mu:
+                        mu = node.g + item.g
+                        forward = item
+                        backward = node
                 # 如果是第一次遇到或者找到更小g值
                 if item.num2pos not in g_values_1 or item.g < g_values_1[item.num2pos]:
                     g_values_1[item.num2pos] = item.g  # 更新最小距离
+                    best_node_1[item.num2pos] = item
                     heapq.heappush(open_heap_1, item)  # 将该节点添加至优先队列中
                     # 若当前状态属于关闭列表,将该状态从关闭集合中移除
                     if item.num2pos in close_set_1:
@@ -168,21 +218,32 @@ def solve_8_digital_problem(f_input, f_goal, f_n, use_linear_conflict=False):
             for item in working_node_2.generate_sub_nodes():
                 # 子节点在对方关闭列表中
                 if item.num2pos in close_set_1:
-                    for node in open_heap_1:
-                        if node.num2pos == item.num2pos:
-                            return node, item
+                    node = best_node_1[item.num2pos]
+                    if node.g + item.g < mu:
+                        mu = node.g + item.g
+                        forward = node
+                        backward = item
                 # 子节点在对方的g_values中
                 if item.num2pos in g_values_1:
-                    for node in open_heap_1:
-                        if node.num2pos == item.num2pos:
-                            return node, item
+                    node = best_node_1[item.num2pos]
+                    if node.g + item.g < mu:
+                        mu = node.g + item.g
+                        forward = node
+                        backward = item
                 # 如果是第一次遇到或者找到更小g值
                 if item.num2pos not in g_values_2 or item.g < g_values_2[item.num2pos]:
                     g_values_2[item.num2pos] = item.g  # 更新最小距离
+                    best_node_2[item.num2pos] = item
                     heapq.heappush(open_heap_2, item)  # 将该节点添加至优先队列中
                     # 若当前状态属于关闭列表,将该状态从关闭集合中移除
                     if item.num2pos in close_set_2:
                         close_set_2.remove(item.num2pos)
+
+            # 终止条件：比较两个开放列表当前最小有效f值之和与mu
+            min_f_1 = peek_min_valid_f(open_heap_1, g_values_1)
+            min_f_2 = peek_min_valid_f(open_heap_2, g_values_2)
+            if min(min_f_1, min_f_2) >= mu:
+                return forward, backward
 
 
 def test(test_times, n, use_linear_conflict=False):
