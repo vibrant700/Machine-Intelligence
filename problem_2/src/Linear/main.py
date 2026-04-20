@@ -1,6 +1,7 @@
 import heapq
-import time
 import pickle
+import time
+
 import function
 from function import backward_Node, forward_Node
 
@@ -272,7 +273,7 @@ def test(test_times, n, use_linear_conflict=False):
             print(
                 f"正向步数: {len(path_forward) - 1}, 反向步数: {len(path_backward) - 1}"
             )
-            print(f"总步数: {len(path_forward) + len(path_backward) - 2}")
+            print(f"总步数: {len(path_forward) + len(path_backward) - 1}")
         else:
             print("未找到解")
     average_time = total_time / test_times
@@ -280,14 +281,14 @@ def test(test_times, n, use_linear_conflict=False):
 
 
 # 对比测试：纯曼哈顿距离 vs 线性冲突
-def compare_two_method(times, size,test_input=None):
+def compare_two_method(times, size, test_input=None):
     for i in range(times):
         # 测试用例
         if test_input is None:
-            test_input_item,test_goal = function.generate_one_permutation(size)
+            test_input_item, test_goal = function.generate_one_permutation(size)
         else:
             test_input_item = test_input[i]
-            test_goal = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0]
+            test_goal = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
 
         print(f"\n初始状态: {test_input_item}")
         print(f"目标状态: {test_goal}")
@@ -296,7 +297,10 @@ def compare_two_method(times, size,test_input=None):
         print("曼哈顿距离")
         start = time.perf_counter_ns()
         node_1, node_2 = solve_8_digital_problem(
-            f_input=test_input_item, f_goal=test_goal, f_n=size, use_linear_conflict=False
+            f_input=test_input_item,
+            f_goal=test_goal,
+            f_n=size,
+            use_linear_conflict=False,
         )
         end = time.perf_counter_ns()
         if node_1 and node_2:
@@ -314,7 +318,10 @@ def compare_two_method(times, size,test_input=None):
         print("线性冲突增强")
         start = time.perf_counter_ns()
         node_1, node_2 = solve_8_digital_problem(
-            f_input=test_input_item, f_goal=test_goal, f_n=size, use_linear_conflict=True
+            f_input=test_input_item,
+            f_goal=test_goal,
+            f_n=size,
+            use_linear_conflict=True,
         )
         end = time.perf_counter_ns()
         if node_1 and node_2:
@@ -330,6 +337,7 @@ def compare_two_method(times, size,test_input=None):
         else:
             print(" 未找到解")
 
+
 if __name__ == "__main__":
     # arrays = {}
     # for i in range(50):
@@ -338,4 +346,4 @@ if __name__ == "__main__":
     # with open("test.pkl", "wb") as f:
     #     pickle.dump(arrays, f,protocol=pickle.HIGHEST_PROTOCOL)
     test_input = pickle.load(open("test.pkl", "rb"))
-    compare_two_method(50, 4,test_input)
+    compare_two_method(50, 4, test_input)
