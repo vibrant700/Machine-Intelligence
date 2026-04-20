@@ -325,7 +325,7 @@ def compare_two_method(times, size,test_input=None):
             print(" 找到解")
             print(f"  正向步数: {len(path_f) - 1}")
             print(f"  反向步数: {len(path_b) - 1}")
-            print(f"  总步数: {len(path_f) + len(path_b) - 2}")
+            print(f"  总步数: {len(path_f) + len(path_b) - 1}")
             print(f"  用时: {(end - start) / 1e6:.2f}ms")
         else:
             print(" 未找到解")
