@@ -1,8 +1,8 @@
 import heapq
 import time
-
-from . import function
-from .function import backward_Node, forward_Node
+import pickle
+import function
+from function import backward_Node, forward_Node
 
 
 # 清理堆顶过期节点，直到堆顶为当前最优版本或堆为空
@@ -280,20 +280,23 @@ def test(test_times, n, use_linear_conflict=False):
 
 
 # 对比测试：纯曼哈顿距离 vs 线性冲突
-def compare_two_method(times, size):
+def compare_two_method(times, size,test_input=None):
     for i in range(times):
         # 测试用例
-        test_input = function.generate_one_permutation(size)
-        test_goal = function.generate_one_permutation(size)
+        if test_input is None:
+            test_input_item,test_goal = function.generate_one_permutation(size)
+        else:
+            test_input_item = test_input[i]
+            test_goal = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0]
 
-        print(f"\n初始状态: {test_input}")
+        print(f"\n初始状态: {test_input_item}")
         print(f"目标状态: {test_goal}")
         print()
 
         print("曼哈顿距离")
         start = time.perf_counter_ns()
         node_1, node_2 = solve_8_digital_problem(
-            f_input=test_input, f_goal=test_goal, f_n=size, use_linear_conflict=False
+            f_input=test_input_item, f_goal=test_goal, f_n=size, use_linear_conflict=False
         )
         end = time.perf_counter_ns()
         if node_1 and node_2:
@@ -302,7 +305,7 @@ def compare_two_method(times, size):
             print(" 找到解")
             print(f"  正向步数: {len(path_f) - 1}")
             print(f"  反向步数: {len(path_b) - 1}")
-            print(f"  总步数: {len(path_f) + len(path_b) - 2}")
+            print(f"  总步数: {len(path_f) + len(path_b) - 1}")
             print(f"  用时: {(end - start) / 1e6:.2f}ms")
         else:
             print(" 未找到解")
@@ -311,20 +314,28 @@ def compare_two_method(times, size):
         print("线性冲突增强")
         start = time.perf_counter_ns()
         node_1, node_2 = solve_8_digital_problem(
-            f_input=test_input, f_goal=test_goal, f_n=size, use_linear_conflict=True
+            f_input=test_input_item, f_goal=test_goal, f_n=size, use_linear_conflict=True
         )
         end = time.perf_counter_ns()
         if node_1 and node_2:
             path_f = function.get_path_forward(node_1)
             path_b = function.get_path_backward(node_2)
+            print(path_b)
+            print(path_f)
             print(" 找到解")
             print(f"  正向步数: {len(path_f) - 1}")
             print(f"  反向步数: {len(path_b) - 1}")
-            print(f"  总步数: {len(path_f) + len(path_b) - 2}")
+            print(f"  总步数: {len(path_f) + len(path_b) - 1}")
             print(f"  用时: {(end - start) / 1e6:.2f}ms")
         else:
             print(" 未找到解")
 
-
 if __name__ == "__main__":
-    compare_two_method(4, 4)
+    # arrays = {}
+    # for i in range(50):
+    #     arrays[i] = function.generate_one_permutation(4)
+    #     print(arrays[i])
+    # with open("test.pkl", "wb") as f:
+    #     pickle.dump(arrays, f,protocol=pickle.HIGHEST_PROTOCOL)
+    test_input = pickle.load(open("test.pkl", "rb"))
+    compare_two_method(50, 4,test_input)
