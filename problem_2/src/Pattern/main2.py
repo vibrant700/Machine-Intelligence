@@ -2,8 +2,8 @@ import heapq
 import pickle
 import time
 
-import function2
-from function2 import backward_Node, forward_Node
+from . import function2
+from .function2 import backward_Node, forward_Node
 
 
 # 清理堆顶过期节点，直到堆顶为当前最优版本或堆为空
@@ -220,7 +220,7 @@ def solve_with_custom_goal(f_input, f_goal, f_n, pattern_db_file):
     return forward_path, backward_path
 
 
-def test(test_times, n,test_input=None, pattern_db_files=None):
+def test(test_times, n, test_input=None, pattern_db_files=None):
     total_time = 0
     pattern_dbs = []
     for tiles, filepath in pattern_db_files:
@@ -250,12 +250,19 @@ def test(test_times, n,test_input=None, pattern_db_files=None):
         print(f"用时:{used_time/1e6}ms")
         total_time += used_time
         if node_1 and node_2:
-            print("正向步数：",len(function2.get_path_forward(node_1))-1)
-            print("反向步数：",len(function2.get_path_backward(node_2))-1)
-            print("总步数：",len(function2.get_path_forward(node_1))+len(function2.get_path_forward(node_2))-1)
+            print("正向步数：", len(function2.get_path_forward(node_1)) - 1)
+            print("反向步数：", len(function2.get_path_backward(node_2)) - 1)
+            print(
+                "总步数：",
+                len(function2.get_path_forward(node_1))
+                + len(function2.get_path_forward(node_2))
+                - 1,
+            )
     average_time = total_time / test_times
     print(f"平均用时:{average_time / 1e6}ms")
 
+
+"""
 if __name__ == "__main__":
     pattern_files = [
         ([1, 2, 3, 4, 5], r"pattern_db_1_5.pkl"),
@@ -264,3 +271,4 @@ if __name__ == "__main__":
     ]
     test_inputs = pickle.load(open("test.pkl", "rb"))
     test(50,4,test_inputs,pattern_files)
+"""

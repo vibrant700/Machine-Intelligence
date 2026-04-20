@@ -2,8 +2,8 @@ import heapq
 import pickle
 import time
 
-import function
-from function import backward_Node, forward_Node
+from . import function
+from .function import backward_Node, forward_Node
 
 
 # 清理堆顶过期节点，直到堆顶为当前最优版本或堆为空
@@ -338,6 +338,7 @@ def compare_two_method(times, size, test_input=None):
             print(" 未找到解")
 
 
+"""
 if __name__ == "__main__":
     # arrays = {}
     # for i in range(50):
@@ -347,3 +348,4 @@ if __name__ == "__main__":
     #     pickle.dump(arrays, f,protocol=pickle.HIGHEST_PROTOCOL)
     test_input = pickle.load(open("test.pkl", "rb"))
     compare_two_method(50, 4, test_input)
+"""
