@@ -2,8 +2,8 @@ import heapq
 import pickle
 import time
 
-from . import function2
-from .function2 import backward_Node, forward_Node
+import function2
+from function2 import backward_Node, forward_Node
 
 
 # 清理堆顶过期节点，直到堆顶为当前最优版本或堆为空
@@ -220,7 +220,7 @@ def solve_with_custom_goal(f_input, f_goal, f_n, pattern_db_file):
     return forward_path, backward_path
 
 
-def test(test_times, n, pattern_db_files=None):
+def test(test_times, n,test_input=None, pattern_db_files=None):
     total_time = 0
     pattern_dbs = []
     for tiles, filepath in pattern_db_files:
@@ -230,33 +230,37 @@ def test(test_times, n, pattern_db_files=None):
     print(f"Loaded {len(pattern_dbs)} pattern databases")
 
     for i in range(test_times):
-        input_state = function2.generate_one_permutation(n)
-        goal_state = function2.generate_one_permutation(n)
+        if test_input is None:
+            input_state, goal_state = function.generate_one_permutation(size)
+        else:
+            input_state = test_input[i]
+            goal_state = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
         print(
             f"input_state:{input_state},goal_state:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0]"
         )
         start_time = time.perf_counter_ns()
         node_1, node_2 = solve_8_digital_problem(
             f_input=input_state,
-            f_goal=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0],
+            f_goal=goal_state,
             f_n=n,
             pattern_db_file=pattern_dbs,
         )
         end_time = time.perf_counter_ns()
         used_time = end_time - start_time
+        print(f"用时:{used_time/1e6}ms")
         total_time += used_time
         if node_1 and node_2:
-            print(function2.get_path_forward(node_1), end="")
-            print(function2.get_path_backward(node_2))
+            print("正向步数：",len(function2.get_path_forward(node_1))-1)
+            print("反向步数：",len(function2.get_path_backward(node_2))-1)
+            print("总步数：",len(function2.get_path_forward(node_1))+len(function2.get_path_forward(node_2))-1)
     average_time = total_time / test_times
     print(f"平均用时:{average_time / 1e6}ms")
 
-
-pattern_files = [
-    ([1, 2, 3, 4, 5], r"D:\machine-intelligence\problem_2\test\pattern_db_1_5.pkl"),
-    ([6, 7, 8, 9, 10], r"D:\machine-intelligence\problem_2\test\pattern_db_6_10.pkl"),
-    (
-        [11, 12, 13, 14, 15],
-        r"D:\machine-intelligence\problem_2\test\pattern_db_11_15.pkl",
-    ),
-]
+if __name__ == "__main__":
+    pattern_files = [
+        ([1, 2, 3, 4, 5], r"pattern_db_1_5.pkl"),
+        ([6, 7, 8, 9, 10], r"pattern_db_6_10.pkl"),
+        ([11, 12, 13, 14, 15],r"pattern_db_11_15.pkl",),
+    ]
+    test_inputs = pickle.load(open("test.pkl", "rb"))
+    test(50,4,test_inputs,pattern_files)
