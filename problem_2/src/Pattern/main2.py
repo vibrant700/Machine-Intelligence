@@ -2,8 +2,14 @@ import heapq
 import pickle
 import time
 
-import function2
-from function2 import backward_Node, forward_Node
+try:
+    import function2
+except ImportError:
+    from . import function2
+try:
+    from function2 import backward_Node, forward_Node
+except ImportError:
+    from .function2 import backward_Node, forward_Node
 
 
 # 清理堆顶过期节点，直到堆顶为当前最优版本或堆为空
