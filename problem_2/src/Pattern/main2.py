@@ -2,8 +2,8 @@ import heapq
 import pickle
 import time
 
-from . import function2
-from .function2 import backward_Node, forward_Node
+import function2
+from function2 import backward_Node, forward_Node
 
 
 # 清理堆顶过期节点，直到堆顶为当前最优版本或堆为空
@@ -262,13 +262,14 @@ def test(test_times, n, test_input=None, pattern_db_files=None):
     print(f"平均用时:{average_time / 1e6}ms")
 
 
-"""
 if __name__ == "__main__":
     pattern_files = [
         ([1, 2, 3, 4, 5], r"pattern_db_1_5.pkl"),
         ([6, 7, 8, 9, 10], r"pattern_db_6_10.pkl"),
-        ([11, 12, 13, 14, 15],r"pattern_db_11_15.pkl",),
+        (
+            [11, 12, 13, 14, 15],
+            r"pattern_db_11_15.pkl",
+        ),
     ]
     test_inputs = pickle.load(open("test.pkl", "rb"))
-    test(50,4,test_inputs,pattern_files)
-"""
+    test(50, 4, test_inputs, pattern_files)
