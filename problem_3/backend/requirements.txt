@@ -1,0 +1,10 @@
+# VisionMark 服务端Python依赖
+
+# 音频下载
+yt-dlp>=2023.3.4
+
+# HTTP请求
+requests>=2.28.0
+
+# 阿里云OSS（音频文件上传）
+oss2>=2.17.0

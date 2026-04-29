@@ -1,0 +1,32 @@
+{
+  "name": "visionmark",
+  "version": "1.0.0",
+  "description": "VisionMark - B站视频AI分析Chrome扩展",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite --config extension/vite.config.js",
+    "build": "vite build --config extension/vite.config.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StudyingHUYANG/VisionMark.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/StudyingHUYANG/VisionMark/issues"
+  },
+  "homepage": "https://github.com/StudyingHUYANG/VisionMark#readme",
+  "dependencies": {
+    "vue": "^3.5.29"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.3.0",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "path": "^0.12.7",
+    "vite": "^7.3.1"
+  }
+}

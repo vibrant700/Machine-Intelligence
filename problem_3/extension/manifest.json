@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "B站广告跳过 - AI版",
+  "version": "1.0.0",
+  "description": "AI智能分析B站视频，自动跳过广告片段",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.bilibili.com/*",
+    "http://localhost:8080/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:8080/*",
+    "http://127.0.0.1:3000/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.bilibili.com/video/*"
+      ],
+      "exclude_matches": [
+        "https://live.bilibili.com/*"
+      ],
+      "js": [
+        "content/config.local.js",
+        "content/constants.js",
+        "content/player.js",
+        "dist/main.js"
+      ],
+      "css": [
+        "dist/visionmark.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content/config.local.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

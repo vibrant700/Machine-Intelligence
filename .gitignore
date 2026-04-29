@@ -15,3 +15,23 @@ events.out.tfevents.*
 .idea
 
 .claude/
+
+# Dependencies
+node_modules/
+
+# Database
+*.db
+
+# Environment variables
+.env
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Downloads (audio/video cache)
+downloads/
+
+# Build output
+extension/dist/
+
